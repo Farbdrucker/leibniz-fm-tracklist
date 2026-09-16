@@ -1,3 +1,21 @@
 {$DOMAIN} {
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	# Stable URL on purpose - the whole point of a hosted embed is that a fix
+	# ships without anyone reopening WordPress, so no /embed.v2.js. Starlette's
+	# StaticFiles sends ETag/Last-Modified but no Cache-Control, which leaves
+	# browsers guessing freshness heuristically (possibly hours); 5 minutes
+	# means a bad deploy heals itself.
+	@embedjs path /embed.js
+	header @embedjs Cache-Control "public, max-age=300, stale-while-revalidate=86400"
+
+	# Only the iframe fallback is meant to be framed. Deliberately NOT a global
+	# frame-ancestors/X-Frame-Options: that would silently kill that fallback.
+	@embedhtml path /embed.html
+	header @embedhtml Content-Security-Policy "frame-ancestors 'self' https://leibniz.fm https://www.leibniz.fm"
+
 	reverse_proxy web:8080
 }

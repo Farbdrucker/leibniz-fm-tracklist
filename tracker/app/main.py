@@ -48,6 +48,8 @@ async def lifespan(app: FastAPI):
 
     _poller = Poller(settings.tracker.stream_status_url, settings.tracker.poll_interval)
     _poller.start()
+    # /live reads the poller's in-memory state through here (see api.live).
+    app.state.poller = _poller
     logger.info("poller started: %s every %.0fs",
                 settings.tracker.stream_status_url, settings.tracker.poll_interval)
 

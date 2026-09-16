@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed-Vorschau — leibniz.fm Tracklist</title>
+<!--
+  VORSCHAU-SEITE, kein Teil des Deployments.
+
+  Eine nachgebaute WordPress-Seite, um die beiden Widgets vor dem Einbau zu
+  sehen. Kein Klon von leibniz.fm, sondern bewusst mehrere Themes: der Punkt
+  der Widgets ist, dass sie Schrift und Farben der Seite uebernehmen - das
+  sieht man nur, wenn man die Umgebung wechseln kann.
+
+  Einfach im Browser oeffnen (Doppelklick genuegt, file:// reicht).
+  Gegen den lokalen Stack: oben auf "localhost" umschalten - dafuer vorher
+  einmal https://localhost/ aufrufen und das Caddy-Zertifikat akzeptieren,
+  sonst schlaegt der Abruf ohne sichtbare Fehlermeldung fehl.
+-->
+<style>
+  /* ---------- demo chrome (nicht Teil des Themes) ---------- */
+  .demobar{
+    position:sticky;top:0;z-index:10;
+    display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;
+    padding:10px 18px;
+    background:#11131a;color:#c9cede;
+    font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    border-bottom:1px solid #2a2f3d;
+  }
+  .demobar strong{color:#fff;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px}
+  .demobar label{display:flex;gap:6px;align-items:center}
+  .demobar select{
+    font:inherit;padding:3px 6px;border-radius:6px;
+    background:#1d212c;color:#e6e9f2;border:1px solid #333a4a;
+  }
+  .demobar code{color:#7dd3a0;word-break:break-all}
+  .demobar .hint{opacity:.55}
+
+  /* ---------- theme tokens: this is the "WordPress theme" ---------- */
+  body{
+    margin:0;
+    background:var(--page-bg);
+    color:var(--page-fg);
+    font-family:var(--page-font);
+    font-size:var(--page-size);
+    line-height:1.6;
+  }
+  body[data-theme="serif"]{
+    --page-bg:#fffdf9; --page-fg:#23201c; --page-muted:#6b6459;
+    --page-font:Georgia,"Iowan Old Style",'Times New Roman',serif;
+    --page-size:18px; --page-link:#9a3412; --page-rule:#e6ded1; --page-card:#f7f2e9;
+  }
+  body[data-theme="dark"]{
+    --page-bg:#0f1115; --page-fg:#e4e6ec; --page-muted:#9aa0ae;
+    --page-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --page-size:16px; --page-link:#6ee7b7; --page-rule:#262a33; --page-card:#171a21;
+  }
+  body[data-theme="modern"]{
+    --page-bg:#ffffff; --page-fg:#14181f; --page-muted:#667085;
+    --page-font:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --page-size:16px; --page-link:#2563eb; --page-rule:#e6e9ef; --page-card:#f6f8fb;
+  }
+  body[data-theme="brutal"]{
+    --page-bg:#f2f0eb; --page-fg:#111; --page-muted:#5a5a5a;
+    --page-font:"Courier New",ui-monospace,monospace;
+    --page-size:17px; --page-link:#c026d3; --page-rule:#111; --page-card:#fff;
+  }
+
+  a{color:var(--page-link)}
+  .site-header{border-bottom:1px solid var(--page-rule);padding:26px 0}
+  .shell{max-width:1040px;margin:0 auto;padding:0 22px}
+  .brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .brand h1{margin:0;font-size:1.7em;letter-spacing:-.01em}
+  .brand p{margin:0;color:var(--page-muted);font-size:.85em}
+  nav{margin-top:14px;display:flex;gap:20px;flex-wrap:wrap;font-size:.88em}
+  nav a{text-decoration:none}
+  nav a:hover{text-decoration:underline}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:44px;padding:36px 0 60px}
+  @media (max-width:820px){ .layout{grid-template-columns:minmax(0,1fr);gap:32px} }
+
+  article h2{font-size:1.35em;margin:0 0 .5em}
+  article p{margin:0 0 1.1em;color:var(--page-fg)}
+  .lede{font-size:1.08em;color:var(--page-muted)}
+
+  .widget-slot{
+    margin:26px 0;padding:20px;
+    background:var(--page-card);
+    border:1px solid var(--page-rule);
+    border-radius:var(--card-radius,10px);
+  }
+  body[data-theme="brutal"] .widget-slot{border-width:2px;border-radius:0}
+  .slot-label{
+    margin:0 0 12px;font-size:.7em;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--page-muted);
+  }
+  aside .widget-slot:first-child{margin-top:0}
+  .site-footer{border-top:1px solid var(--page-rule);padding:26px 0;color:var(--page-muted);font-size:.85em}
+</style>
+</head>
+<body data-theme="serif">
+
+<div class="demobar">
+  <strong>Embed-Vorschau</strong>
+  <label>Theme
+    <select id="theme">
+      <option value="serif">Hell / Serife</option>
+      <option value="dark">Dunkel</option>
+      <option value="modern">Hell / Sans</option>
+      <option value="brutal">Mono</option>
+    </select>
+  </label>
+  <label>Backend
+    <select id="origin">
+      <option value="https://localhost">localhost (lokaler Stack)</option>
+      <option value="https://leibniz-fm.lukassanner.de">leibniz-fm.lukassanner.de (nach Deploy)</option>
+    </select>
+  </label>
+  <label>Akzent
+    <select id="accent">
+      <option value="">(vom Theme geerbt)</option>
+      <option value="#4ade80">Grün</option>
+      <option value="#e0245e">Pink</option>
+      <option value="#f59e0b">Orange</option>
+    </select>
+  </label>
+  <span class="hint">lädt <code id="src">…</code></span>
+  <span class="hint" id="note"></span>
+</div>
+
+<header class="site-header">
+  <div class="shell">
+    <div class="brand">
+      <h1>Bürgerradio — Beispielseite</h1>
+      <p>Nachbau zur Vorschau · nicht die echte Website</p>
+    </div>
+    <nav>
+      <a href="#">Programm</a><a href="#">Sendungen</a><a href="#">Über uns</a>
+      <a href="#">Mitmachen</a><a href="#">Kontakt</a>
+    </nav>
+  </div>
+</header>
+
+<div class="shell layout">
+  <main>
+    <article>
+      <h2>Wie heißt dieser tolle Song, der vorhin lief?</h2>
+      <p class="lede">
+        Diese Seite existiert nur, um die beiden Playlist-Widgets in einer fremden
+        Umgebung zu sehen. Wechsle oben das Theme — Schrift, Schriftgröße und
+        Farben der Widgets ändern sich mit, ohne dass am Widget etwas angepasst wird.
+      </p>
+      <p>
+        Der Fließtext hier ist Füllmaterial. Wichtig ist der Kontrast: das Widget
+        erbt <em>vererbbare</em> CSS-Eigenschaften der Seite (Farbe, Schriftfamilie,
+        Schriftgröße, Zeilenhöhe), bringt aber sein eigenes Layout mit. Regeln des
+        Themes wie <code>.entry-content p { … }</code> greifen nicht hinein.
+      </p>
+
+      <div class="widget-slot">
+        <p class="slot-label">Widget: <code>data-lfm="today"</code></p>
+        <div id="w-today"></div>
+      </div>
+
+      <p>
+        Darunter geht der normale Seiteninhalt weiter. Das Widget beansprucht keine
+        feste Breite und läuft bei schmalen Fenstern sauber um.
+      </p>
+    </article>
+  </main>
+
+  <aside>
+    <div class="widget-slot">
+      <p class="slot-label">Widget: <code>data-lfm="live"</code></p>
+      <div id="w-live"></div>
+    </div>
+    <div class="widget-slot">
+      <p class="slot-label">Widget: <code>data-lfm="now"</code></p>
+      <div id="w-now"></div>
+    </div>
+    <div class="widget-slot">
+      <p class="slot-label">Normales Theme-Widget</p>
+      <p style="margin:0;font-size:.9em">
+        Zum Vergleich: gewöhnlicher Sidebar-Inhalt in der Schrift des Themes.
+      </p>
+    </div>
+  </aside>
+</div>
+
+<footer class="site-footer">
+  <div class="shell">Beispielseite zur Embed-Vorschau — keine echte Radio-Website.</div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var qs = new URLSearchParams(location.search);
+  var body = document.body;
+
+  var theme  = qs.get("theme")  || "serif";
+  var origin = qs.get("origin") || "https://localhost";
+  var accent = qs.get("accent") || "";
+
+  body.setAttribute("data-theme", theme);
+  document.getElementById("theme").value  = theme;
+  document.getElementById("origin").value = origin;
+  document.getElementById("accent").value = accent;
+  document.getElementById("src").textContent = origin + "/embed.js";
+  document.getElementById("note").textContent = origin.indexOf("localhost") !== -1
+    ? "· setzt voraus: docker compose up -d --build, und https://localhost/ einmal aufgerufen (Zertifikat)"
+    : "· funktioniert erst, wenn die neue Version deployed ist";
+  if (accent) body.style.setProperty("--lfm-accent", accent);
+
+  // Theme und Akzent wirken live - die Widgets erben beides ueber den Shadow-Rand.
+  document.getElementById("theme").addEventListener("change", function(){
+    body.setAttribute("data-theme", this.value);
+    qs.set("theme", this.value);
+    history.replaceState(null, "", "?" + qs);
+  });
+  document.getElementById("accent").addEventListener("change", function(){
+    if (this.value) body.style.setProperty("--lfm-accent", this.value);
+    else body.style.removeProperty("--lfm-accent");
+    qs.set("accent", this.value);
+    history.replaceState(null, "", "?" + qs);
+  });
+  // Das Backend steckt in der Script-URL, also neu laden.
+  document.getElementById("origin").addEventListener("change", function(){
+    qs.set("origin", this.value);
+    location.search = "?" + qs;
+  });
+
+  // Genau die Tags, die spaeter in den Custom-HTML-Block kommen - nur mit
+  // data-target, weil sie hier nachtraeglich eingefuegt werden.
+  [["live",  "#w-live",  {"data-listeners": "show"}],
+   ["now",   "#w-now",   {}],
+   ["today", "#w-today", {"data-limit": "12"}]].forEach(function(spec){
+    var s = document.createElement("script");
+    s.src = origin + "/embed.js";
+    s.async = true;
+    s.setAttribute("data-lfm", spec[0]);
+    s.setAttribute("data-target", spec[1]);
+    Object.keys(spec[2]).forEach(function(k){ s.setAttribute(k, spec[2][k]); });
+    document.body.appendChild(s);
+  });
+})();
+</script>
+</body>
+</html>
