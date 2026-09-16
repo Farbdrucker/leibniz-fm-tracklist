@@ -6,24 +6,24 @@
 <title>Playlist-Archiv — Leibniz.fm</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Noto+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
 <style>
   :root{
-    --bg:#1c2442;
-    --bg-soft:#222b4d;
-    --bg-soft-2:#27305a;
-    --text:#e4e3e6;
+    --bg:#141935;
+    --surface:#1b2247;
+    --surface-2:#242c57;
+    --text:#d9dbec;
     --heading:#ffffff;
-    --primary:#91ffb4;
-    --secondary:#6ef097;
-    --link:#60d284;
-    --violet:#bfa2f8;
-    --muted:#9e9da3;
-    --footer-bg:#1e2023;
-    --border:rgba(255,255,255,.12);
-    --radius:14px;
-    --sans:"Noto Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-    --display:"Space Grotesk","Noto Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --muted:#8d91b8;
+    --accent:#4ade80;
+    --accent-strong:#31b968;
+    --accent-soft:rgba(74,222,128,.16);
+    --violet:#b9a3f5;
+    --violet-soft:rgba(185,163,245,.14);
+    --line:rgba(255,255,255,.09);
+    --radius-lg:22px;
+    --radius-md:14px;
+    --sans:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     color-scheme:dark;
   }
@@ -34,274 +34,254 @@
     background:var(--bg);
     color:var(--text);
     font-family:var(--sans);
-    font-size:15px;
+    font-size:15.5px;
     line-height:1.55;
     padding-top:env(safe-area-inset-top,0px);
     padding-bottom:env(safe-area-inset-bottom,0px);
   }
   img{max-width:100%}
   [hidden]{display:none!important}
-  a{color:var(--link);text-decoration:none}
-  a:hover{color:var(--secondary)}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{color:var(--accent-strong)}
+  svg{display:block}
 
-  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
 
   /* ---------- header ---------- */
-  header.site{
-    text-align:center;
-    padding:44px 0 30px;
-    border-bottom:1px solid var(--border);
-  }
-  .wordmark{
-    font-family:var(--display);
-    font-weight:700;
-    font-size:clamp(1.5rem,4.4vw,2.35rem);
-    letter-spacing:.02em;
-    color:var(--heading);
-    margin:0;
-    line-height:1.15;
-  }
-  .wordmark .dot{color:var(--primary)}
-  .wordmark .sep{color:var(--violet);font-weight:300;margin:0 .35em}
-  .wordmark .sub{font-weight:300}
-  .tagline{
-    font-family:var(--display);
-    font-weight:300;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-    font-size:.72rem;
-    color:var(--muted);
-    margin:12px 0 0;
-  }
-
-  /* ---------- controls ---------- */
-  .controls{
-    margin:26px 0 8px;
-    background:var(--bg-soft);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:18px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:14px 18px;
-    align-items:flex-end;
-  }
-  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
-  .field.grow{flex:1 1 260px}
-  .field label{
-    font-family:var(--display);
-    font-size:.68rem;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--muted);
-  }
-  input[type="search"],input[type="date"]{
-    font-family:var(--sans);
-    font-size:.95rem;
-    color:var(--text);
-    background:var(--bg);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:10px 12px;
-    width:100%;
-    min-width:0;
-  }
-  input[type="date"]{font-family:var(--mono);font-size:.85rem}
-  input:focus-visible,button:focus-visible,.day:focus-visible{
-    outline:2px solid var(--primary);
-    outline-offset:2px;
-  }
-  input[type="search"]::placeholder{color:var(--muted)}
-  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.55);cursor:pointer}
-
-  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;font-size:.9rem}
-  .switch input{accent-color:var(--primary);width:16px;height:16px;cursor:pointer;margin:0}
-
-  button{
-    font-family:var(--display);
-    font-size:.78rem;
-    font-weight:500;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--text);
-    background:transparent;
-    border:1px solid var(--border);
-    border-radius:999px;
-    padding:9px 16px;
-    cursor:pointer;
-    transition:border-color .15s,color .15s,background .15s;
-  }
-  button:hover{border-color:var(--primary);color:var(--primary)}
-  button.primary{border-color:var(--primary);color:var(--primary)}
-  button.primary:hover{background:rgba(145,255,180,.12)}
-  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-
-  /* ---------- layout ---------- */
-  .main{
-    display:grid;
-    grid-template-columns:330px minmax(0,1fr);
-    gap:22px;
-    align-items:start;
-    margin:22px 0 60px;
-  }
-  @media (max-width:880px){ .main{grid-template-columns:minmax(0,1fr)} }
-
-  .panel{
-    background:var(--bg-soft);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:18px;
-  }
-
-  /* ---------- calendar ---------- */
-  .cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
-  .cal-title{
-    font-family:var(--display);
-    font-weight:600;
-    color:var(--heading);
-    font-size:1.02rem;
-    letter-spacing:.01em;
-  }
-  .nav-btn{
-    padding:0;
-    width:32px;height:32px;
-    border-radius:999px;
-    display:inline-flex;align-items:center;justify-content:center;
-    font-size:.9rem;
+  header.site{padding:26px 0;border-bottom:1px solid var(--line)}
+  .header-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-dot{
+    width:11px;height:11px;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%,var(--violet),#8a6fe0 78%);
     flex:none;
   }
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-  .dow{
-    text-align:center;
-    font-family:var(--display);
-    font-size:.64rem;
-    letter-spacing:.1em;
-    text-transform:uppercase;
-    color:var(--muted);
-    padding-bottom:6px;
+  .wordmark{
+    font-weight:700;
+    font-size:1.3rem;
+    letter-spacing:.01em;
+    color:var(--heading);
+    margin:0;
   }
+  .wordmark .dot{color:var(--accent)}
+  .wordmark .sub{font-weight:400;color:var(--muted);font-size:.85em;margin-left:.5em}
+  .icon-btn{
+    flex:none;width:36px;height:36px;border-radius:50%;
+    border:1px solid var(--line);background:transparent;color:var(--muted);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:color .15s,border-color .15s;
+  }
+  .icon-btn svg{width:16px;height:16px}
+  .icon-btn:hover{color:var(--accent);border-color:var(--accent)}
+  .icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ---------- today hero ---------- */
+  .today{
+    margin:8px 0 22px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:26px 24px;
+  }
+  .today-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .today-head h2{margin:0;font-size:clamp(1.3rem,3.6vw,1.7rem);font-weight:600;color:var(--heading)}
+  .today-count{font-size:.82rem;color:var(--muted);white-space:nowrap}
+  .today-count b{color:var(--accent);font-weight:600}
+
+  .now{
+    display:flex;gap:16px;align-items:center;
+    padding-bottom:18px;margin-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .now .time-badge{
+    flex:none;
+    font-family:var(--mono);font-size:.82rem;font-weight:600;
+    color:var(--accent);background:var(--accent-soft);
+    border-radius:999px;padding:6px 12px;
+  }
+  .now .titles{min-width:0}
+  .now .eyebrow{font-size:.75rem;color:var(--muted);margin:0 0 3px}
+  .now .artist{color:var(--heading);font-weight:700;font-size:1.28rem;line-height:1.25;word-wrap:break-word}
+  .now .song{color:var(--text);font-size:1rem;opacity:.85;word-wrap:break-word}
+  .now .sp{margin-left:auto}
+
+  .earlier{padding-top:6px}
+  .earlier .track{padding:8px 0}
+
+  .today-empty{padding:20px 4px;color:var(--muted)}
+  .today-empty strong{display:block;color:var(--heading);font-weight:600;margin-bottom:4px}
+
+  /* ---------- finder ---------- */
+  .finder{margin:26px 0 0}
+  .finder-row{display:flex;align-items:center;gap:10px}
+  .search-field{
+    flex:1 1 auto;display:flex;align-items:center;gap:8px;min-width:0;
+    border-bottom:1px solid var(--line);padding:8px 2px;
+    transition:border-color .15s;
+  }
+  .search-field:focus-within{border-color:var(--accent)}
+  .search-field svg{flex:none;width:16px;height:16px;color:var(--muted)}
+  input[type="search"]{
+    flex:1;min-width:0;
+    font-family:var(--sans);font-size:.92rem;color:var(--text);
+    background:transparent;border:0;padding:2px 0;
+  }
+  input[type="search"]:focus{outline:none}
+  input[type="search"]::placeholder{color:var(--muted)}
+
+  .finder-toggle-wrap{position:relative;flex:none}
+  .finder-toggle{
+    flex:none;display:inline-flex;align-items:center;gap:7px;
+    font-family:var(--sans);font-size:.85rem;color:var(--muted);
+    background:transparent;border:1px solid var(--line);border-radius:999px;
+    padding:8px 13px;cursor:pointer;position:relative;
+    transition:color .15s,border-color .15s;
+  }
+  .finder-toggle svg{width:15px;height:15px}
+  .finder-toggle:hover{color:var(--text);border-color:var(--muted)}
+  .finder-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .finder-toggle .chev{transition:transform .15s;margin-left:-1px}
+  .finder-toggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
+  .finder-toggle .dot-badge{
+    position:absolute;top:5px;right:6px;
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+  }
+
+  /* Anchored as its own floating panel (not squeezed to the toggle button's
+     width) so the 7-column calendar grid always has room to lay out. */
+  .finder-panel{
+    position:absolute;top:calc(100% + 10px);right:0;z-index:30;
+    width:340px;max-width:calc(100vw - 40px);
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);
+    padding:16px;box-shadow:0 16px 40px rgba(0,0,0,.4);
+  }
+  .finder-fields{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-bottom:16px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:.75rem;color:var(--muted)}
+  input[type="date"]{
+    font-family:var(--mono);font-size:.82rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.55);cursor:pointer}
+  input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:.85rem;color:var(--text)}
+  .switch input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;margin:0}
+
+  .ghost-btn{
+    font-family:var(--sans);font-size:.8rem;color:var(--muted);
+    background:transparent;border:1px solid var(--line);border-radius:999px;
+    padding:7px 14px;cursor:pointer;transition:border-color .15s,color .15s;
+  }
+  .ghost-btn:hover{color:var(--text);border-color:var(--muted)}
+  .ghost-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .calendar{border-top:1px solid var(--line);padding-top:14px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .cal-title{font-weight:600;color:var(--heading);font-size:.92rem}
+  .nav-btn{
+    padding:0;width:28px;height:28px;border-radius:999px;
+    border:1px solid var(--line);background:transparent;color:var(--muted);
+    display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;flex:none;cursor:pointer;
+    transition:color .15s,border-color .15s;
+  }
+  .nav-btn:hover{color:var(--accent);border-color:var(--accent)}
+  .nav-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+  .dow{text-align:center;font-size:.62rem;letter-spacing:.06em;color:var(--muted);padding-bottom:5px}
   .day{
-    position:relative;
-    aspect-ratio:1/1;
-    border:1px solid transparent;
-    border-radius:9px;
-    background:rgba(255,255,255,.035);
-    color:var(--muted);
-    font-family:var(--display);
-    font-size:.85rem;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:1px;
-    padding:0;
-    cursor:default;
-    text-transform:none;
-    letter-spacing:0;
-    transition:transform .12s,border-color .12s;
+    position:relative;aspect-ratio:1/1;min-width:0;border:1px solid transparent;border-radius:8px;
+    background:rgba(255,255,255,.03);color:var(--muted);font-size:.8rem;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    padding:0;cursor:default;transition:transform .12s,border-color .12s;
   }
   .day.blank{background:transparent;border-color:transparent}
   .day.has-data{cursor:pointer;color:var(--heading);font-weight:600}
-  .day.has-data:hover{transform:translateY(-1px);border-color:var(--secondary)}
+  .day.has-data:hover{transform:translateY(-1px);border-color:var(--accent-strong)}
   .day .n{line-height:1}
-  .day .c{font-size:.6rem;font-weight:400;color:rgba(255,255,255,.75);line-height:1}
+  .day .c{font-size:.56rem;font-weight:400;color:rgba(255,255,255,.7);line-height:1}
   .day.today{border-color:var(--violet)}
-  .day.in-range{box-shadow:inset 0 0 0 1px rgba(145,255,180,.45)}
-  .day.sel{border-color:var(--primary);box-shadow:inset 0 0 0 2px var(--primary)}
-  .cal-hint{margin:14px 0 0;font-size:.74rem;color:var(--muted);line-height:1.5}
+  .day.in-range{box-shadow:inset 0 0 0 1px rgba(74,222,128,.4)}
+  .day.sel{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+  .cal-hint{margin:12px 0 0;font-size:.72rem;color:var(--muted);line-height:1.5}
   .cal-hint kbd{
-    font-family:var(--mono);font-size:.7rem;
-    background:rgba(255,255,255,.08);border:1px solid var(--border);
+    font-family:var(--mono);font-size:.68rem;
+    background:rgba(255,255,255,.08);border:1px solid var(--line);
     border-radius:4px;padding:1px 5px;
   }
 
-  /* ---------- list ---------- */
-  .list-head{
-    display:flex;align-items:baseline;justify-content:space-between;
-    gap:12px;flex-wrap:wrap;margin-bottom:14px;
-  }
-  .count{font-family:var(--display);font-size:.8rem;letter-spacing:.06em;color:var(--muted)}
-  .count b{color:var(--primary);font-weight:600}
-  .active-filters{display:flex;gap:8px;flex-wrap:wrap}
+  .active-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .chip{
-    font-family:var(--display);font-size:.7rem;letter-spacing:.05em;
-    color:var(--violet);border:1px solid rgba(191,162,248,.4);
-    border-radius:999px;padding:3px 10px;
+    font-size:.72rem;color:var(--violet);border:1px solid rgba(185,163,245,.4);
+    border-radius:999px;padding:3px 11px;
   }
 
-  .day-group{margin-bottom:26px}
+  /* ---------- archive list ---------- */
+  .archive{margin-bottom:60px}
+  .list-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .list-head h2{margin:0;font-size:1rem;font-weight:600;color:var(--heading)}
+  .count{font-size:.78rem;color:var(--muted)}
+  .count b{color:var(--accent);font-weight:600}
+
+  .day-group{margin-bottom:22px}
   .day-title{
-    position:sticky;
-    top:env(safe-area-inset-top,0px);
-    z-index:2;
-    background:var(--bg-soft);
-    margin:0 -18px 6px;
-    padding:10px 18px;
-    border-bottom:1px solid var(--border);
-    font-family:var(--display);
-    font-size:.86rem;
-    font-weight:600;
-    letter-spacing:.03em;
-    color:var(--heading);
+    margin:0 0 4px;padding:8px 2px;
+    border-bottom:1px solid var(--line);
+    font-size:.82rem;font-weight:600;color:var(--heading);
     display:flex;justify-content:space-between;gap:12px;align-items:baseline;
   }
-  .day-title span{font-weight:400;color:var(--muted);font-size:.74rem;white-space:nowrap}
+  .day-title span{font-weight:400;color:var(--muted);font-size:.72rem;white-space:nowrap}
 
   .track{
-    display:grid;
-    grid-template-columns:58px minmax(0,1fr) auto;
-    gap:4px 14px;
-    align-items:center;
-    padding:9px 6px;
-    border-bottom:1px solid rgba(255,255,255,.055);
+    display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:4px 14px;align-items:center;
+    padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.05);
   }
-  .track:hover{background:rgba(255,255,255,.035);border-radius:8px}
-  .track .time{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+  .track:hover{background:rgba(255,255,255,.03);border-radius:8px}
+  .track .time{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
   .track .meta{min-width:0}
-  .track .artist{color:var(--heading);font-weight:600;font-size:.95rem;word-wrap:break-word}
-  .track .song{color:var(--text);font-size:.9rem;opacity:.85;word-wrap:break-word}
+  .track .artist{color:var(--heading);font-weight:600;font-size:.94rem;word-wrap:break-word}
+  .track .song{color:var(--text);font-size:.88rem;opacity:.82;word-wrap:break-word}
   .track.station .artist{color:var(--violet)}
-  mark{background:rgba(145,255,180,.26);color:var(--primary);border-radius:3px;padding:0 2px}
+  mark{background:var(--accent-soft);color:var(--heading);border-radius:3px;padding:0 2px}
 
   .sp{
-    flex:none;
-    width:30px;height:30px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    display:inline-flex;align-items:center;justify-content:center;
-    color:var(--muted);
+    flex:none;width:30px;height:30px;border-radius:999px;border:1px solid var(--line);
+    display:inline-flex;align-items:center;justify-content:center;color:var(--muted);
     transition:color .15s,border-color .15s;
   }
-  .sp:hover{color:var(--primary);border-color:var(--primary)}
-  .sp svg{width:15px;height:15px;display:block}
+  .sp:hover{color:var(--accent);border-color:var(--accent)}
+  .sp svg{width:15px;height:15px}
 
-  .empty{
-    text-align:center;padding:52px 20px;color:var(--muted);
-  }
-  .empty strong{display:block;color:var(--heading);font-family:var(--display);font-size:1.05rem;margin-bottom:8px}
+  .empty{text-align:center;padding:48px 20px;color:var(--muted)}
+  .empty strong{display:block;color:var(--heading);font-size:1rem;margin-bottom:8px;font-weight:600}
 
   .notice{
-    border:1px solid rgba(191,162,248,.45);
-    background:rgba(191,162,248,.07);
-    border-radius:var(--radius);
-    padding:20px;
+    margin:22px 0;
+    border:1px solid rgba(185,163,245,.4);background:var(--violet-soft);
+    border-radius:var(--radius-lg);padding:20px;
   }
-  .notice h2{font-family:var(--display);font-size:1rem;color:var(--heading);margin:0 0 10px}
+  .notice h2{font-size:1rem;color:var(--heading);margin:0 0 10px;font-weight:600}
   .notice p{margin:0 0 12px}
   .notice pre{
     font-family:var(--mono);font-size:.78rem;
-    background:var(--bg);border:1px solid var(--border);border-radius:10px;
-    padding:12px;margin:0 0 14px;overflow-x:auto;color:var(--primary);
+    background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    padding:12px;margin:0 0 14px;overflow-x:auto;color:var(--accent);
   }
 
-  footer.site{
-    background:var(--footer-bg);
-    border-top:1px solid var(--border);
-    padding:26px 0;
-    color:var(--muted);
-    font-size:.78rem;
-  }
+  footer.site{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:.78rem}
   footer.site .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+  @media (max-width:520px){
+    .now{flex-wrap:wrap}
+    .now .sp{margin-left:0}
+    .finder-row{flex-wrap:wrap}
+    .search-field{flex-basis:100%}
+    /* full-width positioning context, so the panel (anchored right:0 to
+       this wrapper) spans the row edge-to-edge instead of hanging off
+       the narrow toggle button. */
+    .finder-toggle-wrap{width:100%}
+  }
 
   @media (prefers-reduced-motion:reduce){
     *{transition:none!important;animation:none!important}
@@ -312,61 +292,79 @@
 <body>
 
 <header class="site">
-  <div class="wrap">
-    <h1 class="wordmark">Leibniz<span class="dot">.</span>fm<span class="sep">·</span><span class="sub">Playlist-Archiv</span></h1>
-    <p class="tagline">Dein Radio. Dein Sound.</p>
+  <div class="wrap header-row">
+    <div class="brand">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <h1 class="wordmark">Leibniz<span class="dot">.</span>fm<span class="sub">Playlist-Archiv</span></h1>
+    </div>
+    <button class="icon-btn" id="reload" type="button" aria-label="Neu laden">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 1 0 18.5 15.5"/><path d="M20 5v6h-6"/></svg>
+    </button>
   </div>
 </header>
 
 <div class="wrap">
 
-  <section class="controls">
-    <div class="field grow">
-      <label for="q">Suche — Titel oder Interpret</label>
-      <input id="q" type="search" placeholder="z. B. cure, woodkid, honey …" autocomplete="off" spellcheck="false">
-    </div>
-    <div class="field">
-      <label for="from">von</label>
-      <input id="from" type="date">
-    </div>
-    <div class="field">
-      <label for="to">bis</label>
-      <input id="to" type="date">
-    </div>
-    <div class="field">
-      <label>&nbsp;</label>
-      <div class="btn-row">
-        <label class="switch"><input id="hide" type="checkbox"> Stationskennungen ausblenden</label>
-        <button id="reset" type="button">Zurücksetzen</button>
-        <button id="reload" class="primary" type="button">↻ Neu laden</button>
-      </div>
-    </div>
-  </section>
-
   <div id="notice" hidden></div>
 
-  <div class="main" id="main">
-    <aside class="panel" id="calendar">
-      <div class="cal-head">
-        <button class="nav-btn" id="prev" type="button" aria-label="Voriger Monat">◀</button>
-        <div class="cal-title" id="calTitle">—</div>
-        <button class="nav-btn" id="next" type="button" aria-label="Nächster Monat">▶</button>
+  <section class="finder" id="finderWrap">
+    <div class="finder-row">
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="search" placeholder="Titel oder Interpret suchen …" autocomplete="off" spellcheck="false">
       </div>
-      <div class="cal-grid" id="calGrid"></div>
-      <p class="cal-hint">
-        Helligkeit = Titel pro Tag. <kbd>Klick</kbd> wählt einen Tag,
-        <kbd>Shift</kbd>+<kbd>Klick</kbd> spannt einen Zeitraum auf.
-      </p>
-    </aside>
+      <div class="finder-toggle-wrap">
+        <button class="finder-toggle" id="finderToggle" type="button" aria-expanded="false" aria-controls="finderPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          <span>Zeitraum</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          <span class="dot-badge" id="finderBadge" hidden></span>
+        </button>
+        <div class="finder-panel" id="finderPanel" hidden>
+          <div class="finder-fields">
+            <div class="field">
+              <label for="from">Von</label>
+              <input id="from" type="date">
+            </div>
+            <div class="field">
+              <label for="to">Bis</label>
+              <input id="to" type="date">
+            </div>
+            <label class="switch"><input id="hide" type="checkbox"> Stationskennungen ausblenden</label>
+            <button id="reset" class="ghost-btn" type="button" hidden>Zurücksetzen</button>
+          </div>
+          <div class="calendar" id="calendar">
+            <div class="cal-head">
+              <button class="nav-btn" id="prev" type="button" aria-label="Voriger Monat">◀</button>
+              <div class="cal-title" id="calTitle">—</div>
+              <button class="nav-btn" id="next" type="button" aria-label="Nächster Monat">▶</button>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <p class="cal-hint">
+              Helligkeit = Titel pro Tag. Klick wählt einen Tag, <kbd>Shift</kbd>+Klick spannt einen Zeitraum auf.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="active-filters" id="chips"></div>
+  </section>
 
-    <main class="panel">
-      <div class="list-head">
-        <div class="count" id="count">lade …</div>
-        <div class="active-filters" id="chips"></div>
-      </div>
-      <div id="list"></div>
-    </main>
-  </div>
+  <section class="today" id="today">
+    <div class="today-head">
+      <h2 id="todayHeading">Heute</h2>
+      <div class="today-count" id="todayCount"></div>
+    </div>
+    <div id="todayBody"></div>
+  </section>
+
+  <section class="archive" id="archiveSection">
+    <div class="list-head">
+      <h2>Verlauf</h2>
+      <div class="count" id="count">lade …</div>
+    </div>
+    <div id="list"></div>
+  </section>
 </div>
 
 <footer class="site">
@@ -387,6 +385,11 @@
   var DOW = ["Mo","Di","Mi","Do","Fr","Sa","So"];
   var fmtMonth = new Intl.DateTimeFormat("de-DE", {month:"long", year:"numeric"});
   var fmtDayLong = new Intl.DateTimeFormat("de-DE", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  var fmtToday = new Intl.DateTimeFormat("de-DE", {weekday:"long", day:"numeric", month:"long"});
+
+  var SPOTIFY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.871 7.077-.496 9.713 1.115a.623.623 0 01.206.857zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 11-.452-1.492c3.632-1.102 8.147-.568 11.232 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.617-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 11-.956 1.608z"/>' +
+    "</svg>";
 
   var tracks = [];
   var state = {
@@ -405,7 +408,12 @@
     prev: $("prev"), next: $("next"),
     calTitle: $("calTitle"), calGrid: $("calGrid"),
     count: $("count"), chips: $("chips"), list: $("list"),
-    notice: $("notice"), main: $("main"), rangeInfo: $("range-info")
+    notice: $("notice"), rangeInfo: $("range-info"),
+    today: $("today"), todayHeading: $("todayHeading"),
+    todayCount: $("todayCount"), todayBody: $("todayBody"),
+    finderWrap: $("finderWrap"), finderToggle: $("finderToggle"),
+    finderPanel: $("finderPanel"), finderBadge: $("finderBadge"),
+    archiveSection: $("archiveSection")
   };
 
   /* ---------------- API response -> track objects ---------------- */
@@ -510,6 +518,24 @@
     return fmtDayLong.format(new Date(+p[0], +p[1] - 1, +p[2]));
   }
 
+  function spotifyUrl(t){
+    var q = t.artist ? t.artist + " " + t.song : t.raw;
+    return "https://open.spotify.com/search/" + encodeURIComponent(q);
+  }
+
+  function trackRow(t, ts, extraClass){
+    return '<div class="track' + (t.isStation ? " station" : "") + (extraClass ? " " + extraClass : "") + '">' +
+      '<div class="time">' + t.time + "</div>" +
+      '<div class="meta">' +
+        (t.artist ? '<div class="artist">' + highlight(t.artist, ts) + "</div>" : "") +
+        '<div class="song">' + highlight(t.song, ts) + "</div>" +
+      "</div>" +
+      '<a class="sp" href="' + escapeHtml(spotifyUrl(t)) + '" target="_blank" rel="noopener noreferrer"' +
+      ' title="Auf Spotify suchen" aria-label="Auf Spotify suchen: ' + escapeHtml(t.raw) + '">' +
+      SPOTIFY_ICON + "</a>" +
+      "</div>";
+  }
+
   /* ---------------- filtering ---------------- */
 
   // Everything except the date window — this is what the heatmap counts, so a
@@ -527,6 +553,50 @@
     if (state.from && t.dayKey < state.from) return false;
     if (state.to && t.dayKey > state.to) return false;
     return true;
+  }
+
+  /* ---------------- today hero ---------------- */
+
+  function renderToday(base){
+    var todayKey = keyOf(new Date());
+    el.todayHeading.textContent = "Heute — " + fmtToday.format(new Date());
+
+    var todays = base.filter(function(t){ return t.dayKey === todayKey; });
+
+    if (!todays.length){
+      el.todayCount.textContent = "";
+      var msg = state.query ?
+        "Kein Treffer für „" + escapeHtml(state.query) + "“ heute." :
+        "Heute läuft noch nichts Neues im Archiv — schau später wieder vorbei.";
+      el.todayBody.innerHTML = '<div class="today-empty"><strong>Noch keine Titel heute</strong>' + msg + "</div>";
+      return;
+    }
+
+    el.todayCount.innerHTML = "<b>" + todays.length + "</b> " + (todays.length === 1 ? "Titel" : "Titel");
+
+    var ts = terms(state.query);
+    var latest = todays[todays.length - 1];
+    var earlier = todays.slice(0, -1).reverse();
+
+    var html = '<div class="now">' +
+      '<div class="time-badge">' + latest.time + "</div>" +
+      '<div class="titles">' +
+        '<p class="eyebrow">Zuletzt gespielt</p>' +
+        (latest.artist ? '<div class="artist">' + highlight(latest.artist, ts) + "</div>" : "") +
+        '<div class="song">' + highlight(latest.song, ts) + "</div>" +
+      "</div>" +
+      '<a class="sp" href="' + escapeHtml(spotifyUrl(latest)) + '" target="_blank" rel="noopener noreferrer"' +
+      ' title="Auf Spotify suchen" aria-label="Auf Spotify suchen: ' + escapeHtml(latest.raw) + '">' +
+      SPOTIFY_ICON + "</a>" +
+      "</div>";
+
+    if (earlier.length){
+      html += '<div class="earlier">';
+      earlier.forEach(function(t){ html += trackRow(t, ts); });
+      html += "</div>";
+    }
+
+    el.todayBody.innerHTML = html;
   }
 
   /* ---------------- calendar ---------------- */
@@ -558,7 +628,7 @@
       var style = "";
       if (c > 0){
         cls += " has-data";
-        style = ' style="background:rgba(145,255,180,' + (0.10 + 0.75 * (c / max)).toFixed(3) + ')"';
+        style = ' style="background:rgba(74,222,128,' + (0.10 + 0.75 * (c / max)).toFixed(3) + ')"';
       }
       if (key === todayKey) cls += " today";
       if (key === state.from || key === state.to) cls += " sel";
@@ -574,22 +644,12 @@
     el.calGrid.innerHTML = html;
   }
 
-  /* ---------------- list ---------------- */
+  /* ---------------- archive list ---------------- */
 
-  var SPOTIFY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-    '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.871 7.077-.496 9.713 1.115a.623.623 0 01.206.857zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 11-.452-1.492c3.632-1.102 8.147-.568 11.232 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.617-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 11-.956 1.608z"/>' +
-    "</svg>";
-
-  function spotifyUrl(t){
-    var q = t.artist ? t.artist + " " + t.song : t.raw;
-    return "https://open.spotify.com/search/" + encodeURIComponent(q);
-  }
-
-  function renderList(visible, baseCount){
+  function renderList(visible, noFilters){
     var ts = terms(state.query);
 
-    el.count.innerHTML = "<b>" + visible.length + "</b> von " + tracks.length +
-      " Titeln" + (state.hideStations && baseCount !== tracks.length ? " (Kennungen ausgeblendet)" : "");
+    el.count.innerHTML = "<b>" + visible.length + "</b> " + (visible.length === 1 ? "Titel" : "Titel");
 
     var chips = "";
     if (state.query) chips += '<span class="chip">„' + escapeHtml(state.query) + "“</span>";
@@ -597,15 +657,20 @@
     else if (state.from || state.to) chips += '<span class="chip">' + (state.from || state.to) + "</span>";
     el.chips.innerHTML = chips;
 
-    if (!visible.length){
+    // In the default, unfiltered view today's tracks already lead the page in
+    // the hero above — repeating them here would just push older days down.
+    var todayKey = keyOf(new Date());
+    var rows = noFilters ? visible.filter(function(t){ return t.dayKey !== todayKey; }) : visible;
+
+    if (!rows.length){
       el.list.innerHTML = '<div class="empty"><strong>Keine Titel gefunden</strong>' +
-        "Andere Suche oder anderer Zeitraum — oder <em>Zurücksetzen</em>.</div>";
+        (noFilters ? "Noch kein älterer Verlauf." : "Andere Suche oder anderer Zeitraum — oder <em>Zurücksetzen</em>.") + "</div>";
       return;
     }
 
     // group by day, newest day first, chronological within the day
     var groups = [], byKey = {};
-    visible.forEach(function(t){
+    rows.forEach(function(t){
       if (!byKey[t.dayKey]){ byKey[t.dayKey] = []; groups.push(t.dayKey); }
       byKey[t.dayKey].push(t);
     });
@@ -613,21 +678,10 @@
 
     var html = "";
     groups.forEach(function(key){
-      var rows = byKey[key];
+      var dayRows = byKey[key];
       html += '<section class="day-group"><h2 class="day-title">' + escapeHtml(labelOf(key)) +
-              "<span>" + rows.length + (rows.length === 1 ? " Titel" : " Titel") + "</span></h2>";
-      rows.forEach(function(t){
-        html += '<div class="track' + (t.isStation ? " station" : "") + '">' +
-                '<div class="time">' + t.time + "</div>" +
-                '<div class="meta">' +
-                  (t.artist ? '<div class="artist">' + highlight(t.artist, ts) + "</div>" : "") +
-                  '<div class="song">' + highlight(t.song, ts) + "</div>" +
-                "</div>" +
-                '<a class="sp" href="' + escapeHtml(spotifyUrl(t)) + '" target="_blank" rel="noopener noreferrer"' +
-                ' title="Auf Spotify suchen" aria-label="Auf Spotify suchen: ' + escapeHtml(t.raw) + '">' +
-                SPOTIFY_ICON + "</a>" +
-                "</div>";
-      });
+              "<span>" + dayRows.length + " Titel</span></h2>";
+      dayRows.forEach(function(t){ html += trackRow(t, ts); });
       html += "</section>";
     });
     el.list.innerHTML = html;
@@ -638,8 +692,14 @@
   function render(){
     var base = baseSet();
     var visible = base.filter(inWindow);
+    var noFilters = !state.query && !state.from && !state.to;
+
+    renderToday(base);
     renderCalendar(base);
-    renderList(visible, base.length);
+    renderList(visible, noFilters);
+
+    el.reset.hidden = noFilters;
+    el.finderBadge.hidden = !(state.from || state.to);
   }
 
   function syncInputs(){
@@ -680,6 +740,27 @@
 
   el.reload.addEventListener("click", function(){ load(); });
 
+  function closeFinder(){
+    el.finderToggle.setAttribute("aria-expanded", "false");
+    el.finderPanel.hidden = true;
+  }
+
+  el.finderToggle.addEventListener("click", function(){
+    var open = el.finderToggle.getAttribute("aria-expanded") === "true";
+    if (open) closeFinder();
+    else { el.finderToggle.setAttribute("aria-expanded", "true"); el.finderPanel.hidden = false; }
+  });
+
+  // Floating panel: close on an outside click or Escape, like any dropdown.
+  document.addEventListener("click", function(ev){
+    if (el.finderToggle.getAttribute("aria-expanded") !== "true") return;
+    if (el.finderToggle.contains(ev.target) || el.finderPanel.contains(ev.target)) return;
+    closeFinder();
+  });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape" && el.finderToggle.getAttribute("aria-expanded") === "true") closeFinder();
+  });
+
   el.prev.addEventListener("click", function(){ shiftMonth(-1); });
   el.next.addEventListener("click", function(){ shiftMonth(1); });
 
@@ -719,12 +800,15 @@
     tracks = toTracks(items);
     if (!tracks.length){
       showNotice("<h2>Noch keine Titel</h2><p>Der Tracker-Dienst läuft, hat aber noch keine Titel aufgezeichnet.</p>");
-      el.count.textContent = "0 Titel";
-      el.list.innerHTML = '<div class="empty"><strong>Leer</strong>Noch nichts mitgeschnitten.</div>';
+      el.today.hidden = true;
+      el.finderWrap.hidden = true;
+      el.archiveSection.hidden = true;
       return;
     }
     el.notice.hidden = true;
-    document.getElementById("calendar").hidden = false;
+    el.today.hidden = false;
+    el.finderWrap.hidden = false;
+    el.archiveSection.hidden = false;
     var newest = tracks[tracks.length - 1].date;
     if (state.year === null){
       state.year = newest.getFullYear();
@@ -741,9 +825,9 @@
       "<p>" + escapeHtml(msg) + " — der Tracker-Dienst antwortet nicht. Prüfe mit " +
       "<code>docker compose logs -f</code>, ob beide Container laufen, und lade danach neu.</p>"
     );
-    document.getElementById("calendar").hidden = true;   // no data -> no empty calendar shell
-    el.count.textContent = "keine Daten";
-    el.list.innerHTML = '<div class="empty"><strong>Warte auf Verbindung</strong>Siehe Hinweis oben.</div>';
+    el.today.hidden = true;
+    el.finderWrap.hidden = true;
+    el.archiveSection.hidden = true;
   }
 
   function load(){
