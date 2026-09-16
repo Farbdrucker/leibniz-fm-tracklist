@@ -1,0 +1,32 @@
+services:
+  tracker:
+    build: ./tracker
+    restart: unless-stopped
+    environment:
+      CONFIG_PATH: /config/config.toml
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REFRESH_TOKEN: ${SPOTIFY_REFRESH_TOKEN:-}
+    volumes:
+      - ./config.toml:/config/config.toml:ro
+      - tracker-data:/data
+    networks: [internal]
+    # deliberately no `ports:` — tracker is reachable only from `web` on the internal network
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      TRACKER_API_URL: http://tracker:8000
+    depends_on:
+      tracker:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks: [internal]
+
+networks:
+  internal: {}
+
+volumes:
+  tracker-data: {}
