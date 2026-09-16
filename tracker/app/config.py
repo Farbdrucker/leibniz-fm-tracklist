@@ -78,6 +78,15 @@ def _load_provider(raw: dict) -> ProviderSettings:
 
 
 def load(path: str | Path) -> Settings:
+    path = Path(path)
+    if path.is_dir():
+        raise RuntimeError(
+            f"{path} is a directory, not a file. This usually happens when the config "
+            f"file didn't exist on the host yet when `docker compose up` first ran - "
+            f"Docker then auto-creates the bind-mount target as a directory. Fix: on the "
+            f"host, `rm -rf config.toml && cp config.example.toml config.toml`, then "
+            f"restart the container."
+        )
     with open(path, "rb") as fh:
         raw = tomllib.load(fh)
 
