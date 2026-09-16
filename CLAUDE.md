@@ -87,8 +87,8 @@ browser ──443──> caddy ──> web:8080 ──> tracker:8000 ──> SQL
 
 ### Embedding on leibniz.fm
 
-`web/app/static/embed.js` is a second, independent frontend: two widgets (`data-lfm="now"` and
-`data-lfm="today"`) that the station's WordPress site pastes into a Custom HTML block as a plain
+`web/app/static/embed.js` is a second, independent frontend: three widgets (`data-lfm="live"`,
+`"now"`, `"today"`) that the station's WordPress site pastes into a Custom HTML block as a plain
 `<script src>`. Constraints that shaped it, none of which apply to `index.html`:
 
 - **It runs inside someone else's origin.** The DOM is built with `createElement`/`textContent`, never
@@ -104,7 +104,14 @@ browser ──443──> caddy ──> web:8080 ──> tracker:8000 ──> SQL
   because ACAO is a browser policy, not access control — the data is public and unauthenticated, while an
   allowlist would add a `www`/non-`www` footgun and break Gutenberg's editor preview (`Origin: null`).
 - **Load:** there is no shared cache in the stack, so `Cache-Control` is near-decorative. What protects SQLite is
-  the ~10s memo + single-flight `asyncio.Lock` in `web/app/main.py`.
+  the memo + single-flight `asyncio.Lock` in `web/app/main.py` (10s for `/now`, 5s for `/live`).
+- **`/live` is the only endpoint not backed by SQLite.** The `tracks` table records title *changes*, so the
+  newest row is identical whether the song is playing or the stream died an hour ago — "is it on air right now"
+  exists solely in the running `Poller`'s memory (`snapshot()`). Note `snapshot()` includes `last_error` and poll
+  counters; `api.live` strips them, and anything else exposing it publicly must too. The `live` widget's ticking
+  "läuft seit" takes its *base* from the server (`server_time - since`) and only the delta since the fetch from
+  the visitor's clock — a duration, so no timezone is involved. The listener count is opt-in
+  (`data-listeners="show"`), because whether to publish it is an editorial call, not a technical one.
 - `web/app/static/embed.html` is the iframe fallback for WordPress installs that strip `<script>` (users without
   `unfiltered_html`). It deliberately needs **zero JS in the host page** — so no `postMessage` auto-resize; the
   iframe gets a fixed height and this page scrolls internally.

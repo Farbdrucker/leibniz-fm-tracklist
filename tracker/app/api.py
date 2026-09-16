@@ -1,5 +1,5 @@
 """Tracker's internal read API - deliberately minimal: a health check, a bulk
-track dump, and a small embed payload.
+track dump, and two small embed payloads.
 
 `/tracks` stays an unfiltered dump: filtering/search/calendar aggregation live
 client-side in the web UI, so that proven logic isn't reimplemented in both
@@ -13,13 +13,19 @@ not re-download the whole archive (~300 rows/day, growing) every 30s for every
 visitor. It also decides what *today* means server-side, because this container
 is the only one running on Europe/Berlin (see the TZ note in the Dockerfile);
 a visitor's own `new Date()` would pick the wrong day boundary abroad.
+
+`/live` answers a question the database structurally cannot: rows are written
+only when a title *changes*, so the newest row looks identical whether the song
+is playing right now or the stream went down an hour ago. That state exists only
+in the running Poller's memory - which makes this the one endpoint that reads
+from something other than SQLite.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from . import db
 
@@ -75,4 +81,41 @@ def now(today: int = 1, limit: int = 60) -> dict:
         "recent": [_item(r) for r in recent],
         "today": [_item(r) for r in today_rows],
         "today_total": today_total,
+    }
+
+
+@router.get("/live")
+def live(request: Request) -> dict:
+    """What is on the stream *right now* - the one question the tracks table
+    can't answer.
+
+    Rows are only written when a title *changes*, so the newest row looks
+    identical whether the song is playing or the stream died an hour ago.
+    Only the poller knows, and only in memory: whether the last poll actually
+    reached a titled Icecast source, and how many people are listening.
+
+    The response is deliberately a curated subset of Poller.snapshot() - that
+    dict carries `last_error` (exception text, internal URLs) and poll counters,
+    none of which belong on a public, cross-origin endpoint.
+    """
+    stamp = datetime.now()
+    poller = getattr(request.app.state, "poller", None)
+    snap = poller.snapshot() if poller else {}
+
+    with db.connect() as conn:
+        rows = db.recent_tracks(conn, 1)
+
+    since = snap.get("since")
+    listeners = snap.get("listeners")
+    try:
+        listeners = int(listeners)
+    except (TypeError, ValueError):
+        listeners = None
+
+    return {
+        "server_time": stamp.isoformat(timespec="seconds"),
+        "on_air": bool(snap.get("on_air")),
+        "listeners": listeners,
+        "since": since.isoformat(timespec="seconds") if since else None,
+        "last": _item(rows[0]) if rows else None,
     }

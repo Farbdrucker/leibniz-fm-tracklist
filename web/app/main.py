@@ -3,8 +3,9 @@
 The browser never talks to the tracker directly - that keeps tracker off any
 published port and means *it* needs no CORS configuration.
 
-Two deliberate exceptions to "no CORS", both scoped to /api/now, which feeds the
-widgets embedded on leibniz.fm (see static/embed.js):
+Two deliberate exceptions to "no CORS", both scoped to the /api/now and
+/api/live endpoints that feed the widgets embedded on leibniz.fm (see
+static/embed.js):
 
   * `Access-Control-Allow-Origin: *` is set as a plain header on that one
     response rather than via CORSMiddleware - middleware would also attach CORS
@@ -40,11 +41,13 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 # Tracker polls Icecast every 20s, so a 10s memo never hides a full poll.
 NOW_TTL = 10.0
+# /live drives a ticking "on air" widget, so keep it tighter.
+LIVE_TTL = 5.0
 
 app = FastAPI(title="leibniz.fm web")
 
-_now_cache: dict[tuple[int, int], tuple[float, dict]] = {}
-_now_lock = asyncio.Lock()
+_cache: dict[tuple, tuple[float, dict]] = {}
+_cache_lock = asyncio.Lock()
 
 
 @app.get("/healthz")
@@ -70,32 +73,46 @@ async def api_tracks(since_id: int = 0, limit: int | None = None):
     return JSONResponse(await _tracker_get("/tracks", params))
 
 
-@app.get("/api/now")
-async def api_now(today: int = 1, limit: int = 60):
-    key = (1 if today else 0, max(1, min(limit, 500)))
-    now = time.monotonic()
+async def _memoized(path: str, params: dict, ttl: float) -> dict:
+    """Fetch from the tracker at most once per `ttl`, collapsing concurrent
+    callers. This - not Cache-Control - is what keeps a burst of embedded
+    widget views from becoming a burst of SQLite reads."""
+    key = (path,) + tuple(sorted(params.items()))
 
-    cached = _now_cache.get(key)
-    if cached and now - cached[0] < NOW_TTL:
-        data = cached[1]
-    else:
-        async with _now_lock:
-            # Re-check inside the lock: whoever held it may have just refreshed,
-            # which is what collapses a burst of viewers into one tracker call.
-            cached = _now_cache.get(key)
-            if cached and time.monotonic() - cached[0] < NOW_TTL:
-                data = cached[1]
-            else:
-                data = await _tracker_get("/now", {"today": key[0], "limit": key[1]})
-                _now_cache[key] = (time.monotonic(), data)
+    cached = _cache.get(key)
+    if cached and time.monotonic() - cached[0] < ttl:
+        return cached[1]
 
+    async with _cache_lock:
+        # Re-check inside the lock: whoever held it may have just refreshed.
+        cached = _cache.get(key)
+        if cached and time.monotonic() - cached[0] < ttl:
+            return cached[1]
+        data = await _tracker_get(path, params)
+        _cache[key] = (time.monotonic(), data)
+        return data
+
+
+def _embeddable(data: dict, ttl: float) -> JSONResponse:
+    # See the module docstring for why this is a plain header and why it is `*`.
     return JSONResponse(
         data,
         headers={
             "Access-Control-Allow-Origin": "*",
-            "Cache-Control": f"public, max-age={int(NOW_TTL)}",
+            "Cache-Control": f"public, max-age={int(ttl)}",
         },
     )
+
+
+@app.get("/api/now")
+async def api_now(today: int = 1, limit: int = 60):
+    params = {"today": 1 if today else 0, "limit": max(1, min(limit, 500))}
+    return _embeddable(await _memoized("/now", params, NOW_TTL), NOW_TTL)
+
+
+@app.get("/api/live")
+async def api_live():
+    return _embeddable(await _memoized("/live", {}, LIVE_TTL), LIVE_TTL)
 
 
 # Mounted last: explicit routes above are matched first, this catches the rest.

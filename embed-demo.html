@@ -171,6 +171,10 @@
 
   <aside>
     <div class="widget-slot">
+      <p class="slot-label">Widget: <code>data-lfm="live"</code></p>
+      <div id="w-live"></div>
+    </div>
+    <div class="widget-slot">
       <p class="slot-label">Widget: <code>data-lfm="now"</code></p>
       <div id="w-now"></div>
     </div>
@@ -227,7 +231,9 @@
 
   // Genau die Tags, die spaeter in den Custom-HTML-Block kommen - nur mit
   // data-target, weil sie hier nachtraeglich eingefuegt werden.
-  [["now", "#w-now", {}], ["today", "#w-today", {"data-limit": "12"}]].forEach(function(spec){
+  [["live",  "#w-live",  {"data-listeners": "show"}],
+   ["now",   "#w-now",   {}],
+   ["today", "#w-today", {"data-limit": "12"}]].forEach(function(spec){
     var s = document.createElement("script");
     s.src = origin + "/embed.js";
     s.async = true;

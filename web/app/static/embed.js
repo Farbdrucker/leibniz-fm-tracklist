@@ -58,16 +58,24 @@
     return v;
   }
 
-  var KIND = attr("data-lfm", "now").toLowerCase() === "today" ? "today" : "now";
+  var WANTED = attr("data-lfm", "now").toLowerCase();
+  var KIND = WANTED === "today" ? "today" : (WANTED === "live" ? "live" : "now");
   var LIMIT = num("data-limit", 60, 1, 500);
   // Station IDs are filtered client-side (the server has no notion of them), so
   // ask for headroom and slice to LIMIT after filtering - otherwise data-limit
   // would silently deliver far fewer rows than requested.
   var FETCH_LIMIT = KIND === "today" ? Math.min(500, LIMIT * 2 + 20) : 1;
-  var INTERVAL = num("data-interval", 30, 10, 3600) * 1000;
+  // "live" matches the tracker's own 20s Icecast poll; nothing is gained by
+  // asking more often than the data can change.
+  var INTERVAL = num("data-interval", KIND === "live" ? 20 : 30, 10, 3600) * 1000;
   var HIDE_STATIONS = attr("data-stations", "hide") !== "show";
+  var SHOW_LISTENERS = attr("data-listeners", "hide") === "show";
   var HEADING = attr("data-heading", null);
   var TARGET = attr("data-target", null);
+
+  var PATH = KIND === "live"
+    ? "/api/live"
+    : "/api/now?today=" + (KIND === "today" ? 1 : 0) + "&limit=" + FETCH_LIMIT;
 
   // Past this, "Zuletzt gespielt" would be a lie - the poller may be down, or
   // the station simply off air overnight.
@@ -80,8 +88,7 @@
   var MEMO_MS = 10000;
 
   function fetchNow() {
-    var today = KIND === "today" ? 1 : 0;
-    var key = today + "|" + FETCH_LIMIT;
+    var key = PATH;
     var hit = SHARED.cache[key];
     if (hit && Date.now() - hit.at < MEMO_MS) return Promise.resolve(hit.data);
     if (SHARED.inflight[key]) return SHARED.inflight[key];
@@ -89,7 +96,7 @@
     var ctrl = window.AbortController ? new AbortController() : null;
     var timeout = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
 
-    var p = fetch(BASE + "/api/now?today=" + today + "&limit=" + FETCH_LIMIT, {
+    var p = fetch(BASE + PATH, {
       signal: ctrl ? ctrl.signal : undefined,
       credentials: "omit"
     }).then(function (res) {
@@ -189,6 +196,21 @@
     return "";
   }
 
+  // Seconds between two naive-Berlin stamps. Both come from the server, so the
+  // visitor's timezone never enters into it.
+  function secondsBetween(fromStamp, toStamp) {
+    var a = parseNaive(fromStamp), b = parseNaive(toStamp);
+    if (!a || !b) return null;
+    return Math.max(0, Math.round((b.date - a.date) / 1000));
+  }
+
+  function clock(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    var mm = (m < 10 && h ? "0" : "") + m;
+    return (h ? h + ":" : "") + mm + ":" + (s < 10 ? "0" : "") + s;
+  }
+
   function whenLabel(track, data) {
     if (track.day === data.day) return track.time;
     if (track.day === prevKey(data.day)) return "Gestern " + track.time;
@@ -285,6 +307,78 @@
     root.appendChild(archiveLink("Ganzes Archiv ansehen →"));
   }
 
+  // The ticking "läuft seit" counter. The *base* value comes from the server
+  // (server_time - since); only the delta since the fetch uses the visitor's
+  // clock, which is a duration, not a wall-clock time, so no timezone applies.
+  var elapsedEl = null, elapsedBase = 0, elapsedAt = 0, elapsedTimer = null;
+
+  function paintElapsed() {
+    if (!elapsedEl) return;
+    elapsedEl.textContent = "läuft seit " + clock(elapsedBase + (Date.now() - elapsedAt) / 1000);
+  }
+
+  function stopElapsed() {
+    if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+  }
+
+  function startElapsed() {
+    stopElapsed();
+    if (!elapsedEl || document.hidden) return;
+    paintElapsed();
+    elapsedTimer = setInterval(paintElapsed, 1000);
+  }
+
+  function renderLive(root, data) {
+    var track = data.last ? toTrack(data.last) : null;
+    var on = !!data.on_air;
+    var srv = parseNaive(data.server_time);
+
+    var box = elm("div", "now");
+    var titles = elm("div", "titles");
+
+    var head = elm("p", "livehead");
+    head.appendChild(elm("span", "dot " + (on ? "on" : "off")));
+    head.appendChild(elm("span", null, on ? "Es läuft gerade" : "Stream gerade offline"));
+    titles.appendChild(head);
+
+    if (track) {
+      if (track.artist) titles.appendChild(elm("div", "artist", track.artist));
+      titles.appendChild(elm("div", "song", track.song));
+    } else {
+      titles.appendChild(elm("div", "song", "Noch keine Titel aufgezeichnet."));
+    }
+
+    var bits = [];
+    if (on) {
+      var secs = secondsBetween(data.since, data.server_time);
+      if (secs !== null) {
+        elapsedBase = secs;
+        elapsedAt = Date.now();
+        elapsedEl = elm("span", null, "läuft seit " + clock(secs));
+      }
+      if (SHOW_LISTENERS && typeof data.listeners === "number") {
+        bits.push(data.listeners === 1 ? "1 hört zu" : data.listeners + " hören zu");
+      }
+    } else if (track && srv) {
+      bits.push("zuletzt " + whenLabel(track, { day: srv.day }));
+    }
+
+    if (elapsedEl || bits.length) {
+      var stat = elm("p", "stat");
+      if (elapsedEl) stat.appendChild(elapsedEl);
+      for (var i = 0; i < bits.length; i++) {
+        stat.appendChild(elm("span", null, (elapsedEl || i ? " · " : "") + bits[i]));
+      }
+      titles.appendChild(stat);
+    }
+
+    box.appendChild(titles);
+    if (track && !track.isStation) box.appendChild(spotifyLink(track));
+    root.appendChild(box);
+    root.appendChild(archiveLink("Ganzes Archiv ansehen →"));
+    startElapsed();
+  }
+
   function renderToday(root, data) {
     var rows = toTracks(data.today);
     if (HIDE_STATIONS) {
@@ -332,6 +426,14 @@
     "  font-variant-numeric:tabular-nums;white-space:nowrap}",
     ".titles{min-width:0;flex:1 1 auto}",
     ".eyebrow{margin:0 0 .15em;font-size:.72em;letter-spacing:.06em;text-transform:uppercase;opacity:.6}",
+    ".livehead{display:flex;align-items:center;gap:.45em;margin:0 0 .25em;",
+    "  font-size:.72em;letter-spacing:.06em;text-transform:uppercase;opacity:.75}",
+    ".dot{width:.62em;height:.62em;border-radius:999px;flex:none;background:var(--lfm-accent,currentColor)}",
+    ".dot.on{animation:lfm-pulse 2s ease-in-out infinite}",
+    ".dot.off{background:currentColor;opacity:.3}",
+    "@keyframes lfm-pulse{0%,100%{opacity:1}50%{opacity:.25}}",
+    "@media (prefers-reduced-motion:reduce){.dot.on{animation:none}}",
+    ".stat{margin:.4em 0 0;font-size:.8em;opacity:.65;font-variant-numeric:tabular-nums}",
     ".now .artist{font-weight:700;font-size:1.15em;line-height:1.2;overflow-wrap:anywhere}",
     ".now .song{font-size:1em;opacity:.8;overflow-wrap:anywhere}",
     ".track{display:grid;grid-template-columns:4.2em minmax(0,1fr) auto;gap:.1em .8em;align-items:center;",
@@ -378,18 +480,30 @@
   var timer = null, failures = 0, lastSig = null;
 
   function signature(data) {
+    if (KIND === "live") {
+      // Note `since` is in here but `server_time` is not: while one track keeps
+      // playing nothing is redrawn, and the counter ticks on its own.
+      return (data.on_air ? 1 : 0) + ":" + ((data.last && data.last.id) || 0) +
+             ":" + (data.since || "") + ":" + (SHOW_LISTENERS ? data.listeners : "");
+    }
     var top = (data.recent && data.recent[0] && data.recent[0].id) || 0;
     return top + ":" + data.day + ":" + (data.today_total || 0) +
            ":" + ((data.today && data.today.length) || 0);
   }
 
-  function draw(data) {
+  function clearRoot() {
+    stopElapsed();
+    elapsedEl = null;
     while (root.firstChild) root.removeChild(root.firstChild);
-    (KIND === "today" ? renderToday : renderNow)(root, data);
+  }
+
+  function draw(data) {
+    clearRoot();
+    (KIND === "today" ? renderToday : KIND === "live" ? renderLive : renderNow)(root, data);
   }
 
   function drawOffline() {
-    while (root.firstChild) root.removeChild(root.firstChild);
+    clearRoot();
     // Deliberately no diagnostics: this renders inside someone else's page.
     root.appendChild(elm("p", "muted", "Die Playlist ist gerade nicht erreichbar."));
     root.appendChild(archiveLink("Zum Playlist-Archiv →"));
@@ -417,10 +531,14 @@
   }
 
   document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) schedule(0);
-    else if (timer) { clearTimeout(timer); timer = null; }
+    if (!document.hidden) { schedule(0); startElapsed(); }
+    else {
+      stopElapsed();
+      if (timer) { clearTimeout(timer); timer = null; }
+    }
   });
   window.addEventListener("pagehide", function () {
+    stopElapsed();
     if (timer) { clearTimeout(timer); timer = null; }
   });
 
