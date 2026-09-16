@@ -21,8 +21,24 @@ services:
     depends_on:
       tracker:
         condition: service_healthy
+    networks: [internal]
+    # no `ports:` — only reachable from `caddy` on the internal network
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN}
     ports:
-      - "8080:8080"
+      - "80:80"     # required for Let's Encrypt's HTTP-01 challenge + HTTP->HTTPS redirect
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data       # certificates - keep this volume to avoid Let's Encrypt rate limits
+      - caddy-config:/config
+    depends_on:
+      - web
     networks: [internal]
 
 networks:
@@ -30,3 +46,5 @@ networks:
 
 volumes:
   tracker-data: {}
+  caddy-data: {}
+  caddy-config: {}
