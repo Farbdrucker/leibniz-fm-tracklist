@@ -38,3 +38,49 @@ docker compose up -d
 
 # navigate to the website, eg https://localhost/
 open https://localhost/
+```
+
+## Einbetten (z.B. in WordPress)
+
+Zwei Widgets lassen sich auf einer fremden Seite einbinden — einfach in einen **Custom-HTML-Block**
+kopieren, es wird nichts weiter installiert:
+
+```html
+<!-- „Zuletzt gespielt" — kompakt, z.B. für Sidebar oder Startseite -->
+<script src="https://leibniz-fm.lukassanner.de/embed.js" data-lfm="now" async></script>
+
+<!-- Die Titel von heute -->
+<script src="https://leibniz-fm.lukassanner.de/embed.js" data-lfm="today" async></script>
+```
+
+Die Widgets übernehmen Schrift und Farben der umgebenden Seite (Shadow DOM, alles in `em` und
+`currentColor`), aktualisieren sich alle 30 Sekunden und pausieren, solange der Tab im Hintergrund ist.
+
+| Attribut | Standard | Bedeutung |
+|---|---|---|
+| `data-lfm` | `now` | `now` = zuletzt gespielt, `today` = Titel von heute |
+| `data-limit` | `60` | maximale Anzahl Titel (nur `today`) |
+| `data-interval` | `30` | Sekunden zwischen zwei Abfragen |
+| `data-stations` | `hide` | `show` zeigt auch Stationskennungen und Jingles |
+| `data-heading` | — | eigene Überschrift statt „Heute — …" |
+| `data-target` | — | CSS-Selektor des Zielelements, falls das Widget woanders erscheinen soll |
+
+Feinjustierung ist ohne Code möglich, über *Design → Customizer → Zusätzliches CSS*:
+
+```css
+.lfm-embed { --lfm-accent: #4ade80; --lfm-max-width: 36em; }
+```
+
+**Falls WordPress das `<script>` entfernt** (bei Nutzer:innen ohne `unfiltered_html` — typisch für
+Multisite-Installationen oder wenn ein Security-Plugin dazwischenfunkt), gibt es einen iframe-Fallback.
+Der übernimmt das Theme nicht, deshalb lassen sich Farben per Parameter mitgeben (Hex **ohne** `#`):
+
+```html
+<iframe src="https://leibniz-fm.lukassanner.de/embed.html?w=now&fg=222222&accent=e0245e"
+        style="width:100%;height:150px;border:0" loading="lazy"
+        title="Zuletzt auf leibniz.fm gespielt"></iframe>
+```
+
+Ob der Block Skripte durchlässt, klärt am schnellsten ein Test: `<script>document.write('OK')</script>`
+in einen Custom-HTML-Block, Seite (privat) veröffentlichen und **im Frontend** ansehen — nicht im Editor,
+dessen Vorschau läuft in einer Sandbox und ist kein verlässlicher Test.

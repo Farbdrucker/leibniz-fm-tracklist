@@ -126,11 +126,36 @@ def tracks_since(conn, since_id: int = 0, limit: int | None = None) -> list[sqli
 
 
 def recent_tracks(conn, limit: int) -> list[sqlite3.Row]:
-    """Most recent tracks, newest first - used by the local --tui dev mode."""
+    """Most recent tracks, newest first - used by the --tui dev mode and /now."""
     return conn.execute(
         "SELECT id, ts, artist, song, raw FROM tracks ORDER BY id DESC LIMIT ?",
         (limit,),
     ).fetchall()
+
+
+def tracks_for_day(conn, day: str, limit: int | None = None) -> list[sqlite3.Row]:
+    """One day's tracks, chronological. `day` is a YYYY-MM-DD key (idx_tracks_day).
+
+    A `limit` keeps the *newest* rows - fetched descending, then reversed - so the
+    caller always gets chronological order regardless of whether it was capped.
+    """
+    if limit is None:
+        return conn.execute(
+            "SELECT id, ts, artist, song, raw FROM tracks WHERE day = ? ORDER BY id",
+            (day,),
+        ).fetchall()
+    rows = conn.execute(
+        "SELECT id, ts, artist, song, raw FROM tracks WHERE day = ? ORDER BY id DESC LIMIT ?",
+        (day, limit),
+    ).fetchall()
+    rows.reverse()
+    return rows
+
+
+def day_track_count(conn, day: str) -> int:
+    return conn.execute(
+        "SELECT count(*) AS n FROM tracks WHERE day = ?", (day,)
+    ).fetchone()["n"]
 
 
 def tracks_for_sync(conn, since_id: int) -> list[sqlite3.Row]:
