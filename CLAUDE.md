@@ -117,6 +117,14 @@ browser ──443──> caddy ──> web:8080 ──> tracker:8000 ──> SQL
   iframe gets a fixed height and this page scrolls internally.
 - `/embed.js` keeps a **stable URL** (no `embed.v2.js`): the point of a hosted embed is shipping a fix without
   anyone reopening WordPress. The Caddyfile gives it a 5-minute `Cache-Control` so a bad deploy self-heals.
+- `web/app/svg.py` + `GET /embed.svg` render the same card server-side as an **image**, for hosts that sanitize
+  markup so hard the widget can never run — GitHub READMEs strip `<script>`, `<iframe>`, `<style>` and all CSS.
+  It is a third rendering path and will drift from `embed.js` unless both are changed together; that is the price
+  of the medium, not an oversight. Constraints it inherits: GitHub re-serves it through the Camo proxy, which
+  fetches only this one URL (so no `@font-face`, no linked CSS — generic font stacks only) and caches hard (so
+  the card is "recent", never live, whatever `Cache-Control` says). Light/dark is two URLs behind GitHub's
+  `<picture media="...">`, not inheritance. SVG is XML built from Icecast metadata, so everything interpolated
+  goes through `escape()`; `_fit()` ellipsizes by estimated glyph advance because SVG neither wraps nor clips.
 
 ### Adding a streaming provider
 

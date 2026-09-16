@@ -33,8 +33,10 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+
+from . import svg
 
 TRACKER_API_URL = os.environ.get("TRACKER_API_URL", "http://tracker:8000")
 STATIC_DIR = Path(__file__).parent / "static"
@@ -113,6 +115,39 @@ async def api_now(today: int = 1, limit: int = 60):
 @app.get("/api/live")
 async def api_live():
     return _embeddable(await _memoized("/live", {}, LIVE_TTL), LIVE_TTL)
+
+
+@app.get("/embed.svg")
+async def embed_svg(w: str = "live", theme: str = "light",
+                    width: int = 480, listeners: int = 0):
+    """A rendered card, for places that sanitize away <script> - GitHub READMEs
+    above all (see app/svg.py). Served as an image, so it is inert by design."""
+    kind = "now" if w == "now" else "live"
+    if kind == "live":
+        data = await _memoized("/live", {}, LIVE_TTL)
+    else:
+        data = await _memoized("/now", {"today": 0, "limit": 1}, NOW_TTL)
+
+    body = svg.card(
+        data, kind=kind,
+        theme="dark" if theme == "dark" else "light",
+        width=max(280, min(width, 900)),
+        listeners=bool(listeners),
+    )
+    return Response(
+        body,
+        media_type="image/svg+xml",
+        headers={
+            # GitHub re-serves this through its Camo proxy, which caches
+            # aggressively. These ask it to revalidate; they make the card
+            # update far more often, but they cannot guarantee it - a README
+            # card is always "recent", never live.
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
 
 
 # Mounted last: explicit routes above are matched first, this catches the rest.

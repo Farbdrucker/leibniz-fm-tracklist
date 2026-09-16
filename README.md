@@ -96,3 +96,34 @@ Der übernimmt das Theme nicht, deshalb lassen sich Farben per Parameter mitgebe
 Ob der Block Skripte durchlässt, klärt am schnellsten ein Test: `<script>document.write('OK')</script>`
 in einen Custom-HTML-Block, Seite (privat) veröffentlichen und **im Frontend** ansehen — nicht im Editor,
 dessen Vorschau läuft in einer Sandbox und ist kein verlässlicher Test.
+
+## In einer GitHub-README
+
+GitHub entfernt in READMEs `<script>`, `<iframe>`, `<style>` und jedes CSS — das JS-Widget kann dort
+also nicht laufen. Bilder überleben die Filterung, deshalb gibt es `/embed.svg`: dieselbe Karte,
+serverseitig als SVG gerendert. GitHub liefert sie über seinen Camo-Proxy aus.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://leibniz-fm.lukassanner.de/embed.svg?w=live&amp;theme=dark">
+  <img alt="Was gerade auf leibniz.fm läuft" src="https://leibniz-fm.lukassanner.de/embed.svg?w=live&amp;theme=light">
+</picture>
+
+```html
+<picture>
+  <source media="(prefers-color-scheme: dark)"
+          srcset="https://leibniz-fm.lukassanner.de/embed.svg?w=live&amp;theme=dark">
+  <img alt="Was gerade auf leibniz.fm läuft"
+       src="https://leibniz-fm.lukassanner.de/embed.svg?w=live&amp;theme=light">
+</picture>
+```
+
+Parameter: `w=live|now`, `theme=light|dark`, `width=` (280–900), `listeners=1`.
+
+Drei Einschränkungen, die in der Natur der Sache liegen:
+
+- **Nicht live.** Camo cacht. Die Antwort schickt `Cache-Control: no-store`, was die Aktualisierung
+  deutlich häufiger macht, aber nicht erzwingt — die Karte ist „vor ein paar Minuten", nie „jetzt".
+- **Keine Interaktion**, kein Spotify-Link, kein Hover. Es ist ein Bild. Ein Link drumherum geht:
+  `<a href="https://leibniz-fm.lukassanner.de/"><picture>…</picture></a>`.
+- **Keine eigenen Schriften.** Camo lädt nur diese eine URL, `@font-face` bliebe wirkungslos. Die Karte
+  nutzt den System-Font-Stack, sieht unter macOS/Windows/Linux also leicht unterschiedlich aus.
