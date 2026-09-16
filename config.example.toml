@@ -1,0 +1,21 @@
+# Copy to config.toml and adjust. Secrets (client id/secret, refresh token)
+# are never set here - see .env.example instead.
+
+[tracker]
+stream_status_url = "https://server3.streamserver-unlimited.de:10519/status-json.xsl"
+poll_interval = 20.0             # seconds between Icecast polls
+db_path = "/data/tracklist.db"
+
+[api]
+host = "0.0.0.0"
+port = 8000
+
+[[providers]]
+type = "spotify"
+enabled = true
+playlist_name_template = "Leibniz.fm {date}"   # {date}=2026-09-16, {datum}=16.09.2026
+playlist_description = "Automatisch mitgeschnitten von leibniz.fm"
+sync_interval = 1800.0           # seconds between Spotify sync runs (30 min)
+min_artist_similarity = 0.55
+min_title_similarity = 0.60
+# secrets_env_prefix = "SPOTIFY"  # optional; defaults to type.upper() ("SPOTIFY")
