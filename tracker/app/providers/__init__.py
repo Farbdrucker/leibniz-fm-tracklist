@@ -7,12 +7,15 @@ its factory in _FACTORIES below plus a [[providers]] entry in config.toml.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
 from ..config import ProviderSettings, Settings
 from .base import StreamingProvider
 from .spotify import Spotify, SpotifyProvider
+
+logger = logging.getLogger("tracker.providers")
 
 
 def _build_spotify(cfg: ProviderSettings) -> StreamingProvider:
@@ -33,12 +36,25 @@ class ProviderRuntime:
 
 
 def load_providers(settings: Settings) -> list[ProviderRuntime]:
+    """Build every enabled, successfully-configured provider.
+
+    A provider that fails to initialize (e.g. missing credentials) is
+    logged and skipped rather than raised - ingestion must keep running
+    with zero streaming providers configured, which is the default,
+    fully supported way to run the tracker.
+    """
     runtimes = []
     for cfg in settings.providers:
         if not cfg.enabled:
             continue
         factory = _FACTORIES.get(cfg.type)
         if factory is None:
-            raise ValueError(f"unknown provider type: {cfg.type!r}")
-        runtimes.append(ProviderRuntime(provider=factory(cfg), settings=cfg))
+            logger.error("unknown provider type %r, skipping", cfg.type)
+            continue
+        try:
+            provider = factory(cfg)
+        except Exception:
+            logger.exception("failed to initialize provider %r, skipping", cfg.type)
+            continue
+        runtimes.append(ProviderRuntime(provider=provider, settings=cfg))
     return runtimes
