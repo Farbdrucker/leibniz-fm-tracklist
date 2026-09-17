@@ -31,9 +31,11 @@ import os
 import time
 from pathlib import Path
 
+from urllib.parse import quote
+
 import httpx
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import svg
@@ -45,6 +47,9 @@ STATIC_DIR = Path(__file__).parent / "static"
 NOW_TTL = 10.0
 # /live drives a ticking "on air" widget, so keep it tighter.
 LIVE_TTL = 5.0
+# A song never looked up before waits for MusicBrainz (1 req/s), Discogs and
+# Wikidata in sequence - seconds, not milliseconds.
+SONG_TIMEOUT = 60.0
 
 app = FastAPI(title="leibniz.fm web")
 
@@ -57,10 +62,12 @@ def healthz() -> dict:
     return {"status": "ok"}
 
 
-async def _tracker_get(path: str, params: dict) -> dict:
+async def _tracker_get(path: str, params: dict, timeout: float = 10.0) -> dict:
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.get(f"{TRACKER_API_URL}{path}", params=params)
+        if resp.status_code == 404:
+            raise HTTPException(status_code=404, detail="not found")
         resp.raise_for_status()
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"tracker unreachable: {exc}") from exc
@@ -148,6 +155,27 @@ async def embed_svg(w: str = "live", theme: str = "light",
             "Access-Control-Allow-Origin": "*",
         },
     )
+
+
+@app.get("/api/songs/{artist}/{song}")
+async def api_song(artist: str, song: str, fetch: int = 1):
+    """Song page data. Deliberately not memoized: `_memoized` holds one global
+    lock, and a song fetched for the first time takes seconds - that would stall
+    every embedded widget behind it. The tracker caches in SQLite and
+    single-flights per song, which is the protection that matters here."""
+    path = f"/songs/{quote(artist, safe='')}/{quote(song, safe='')}"
+    data = await _tracker_get(path, {"fetch": 1 if fetch else 0}, timeout=SONG_TIMEOUT)
+    return JSONResponse(data, headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/{artist}/{song}")
+async def song_page(artist: str, song: str):
+    """Pretty song URLs (/arctic-monkeys/fluorescent-adolescent) all serve the
+    same static shell; song.html reads the path and asks /api/songs. Declared
+    after every real two-segment route, so it only catches what's left."""
+    if artist in ("api", "static"):
+        raise HTTPException(status_code=404)
+    return FileResponse(STATIC_DIR / "song.html")
 
 
 # Mounted last: explicit routes above are matched first, this catches the rest.

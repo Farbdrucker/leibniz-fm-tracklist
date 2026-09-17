@@ -64,6 +64,16 @@ CREATE TABLE IF NOT EXISTS sync_state (
     provider              TEXT PRIMARY KEY,
     last_synced_track_id  INTEGER NOT NULL DEFAULT 0
 );
+
+-- One row per song page (keyed like tracks.slug): whatever MusicBrainz, Discogs
+-- and Wikidata said about it, as one JSON blob. status: found | partial |
+-- missing | error - see metadata/enricher.py for when each is re-fetched.
+CREATE TABLE IF NOT EXISTS song_metadata (
+    slug       TEXT PRIMARY KEY,
+    status     TEXT NOT NULL,
+    data       TEXT NOT NULL DEFAULT '{}',
+    fetched_at TEXT NOT NULL
+);
 """
 
 
@@ -77,6 +87,13 @@ def configure(db_path: str | Path) -> None:
 def init_schema() -> None:
     with _init_lock, connect() as conn:
         conn.executescript(SCHEMA)
+        # tracks.slug arrived after the first deployments, so older files need
+        # the column added in place. NULL = not computed yet ('' = no song page);
+        # the metadata worker fills it, which keeps ingest.py unaware of slugs.
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(tracks)")}
+        if "slug" not in columns:
+            conn.execute("ALTER TABLE tracks ADD COLUMN slug TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_slug ON tracks(slug)")
 
 
 @contextmanager
@@ -167,13 +184,68 @@ def tracks_for_sync(conn, since_id: int) -> list[sqlite3.Row]:
     ).fetchall()
 
 
+def max_track_id(conn) -> int:
+    return conn.execute("SELECT coalesce(max(id), 0) AS n FROM tracks").fetchone()["n"]
+
+
+# -- song slugs -----------------------------------------------------------------
+
+def assign_slugs(conn, slug_fn) -> int:
+    """Compute tracks.slug for rows that don't have one yet. Returns the count.
+
+    Cheap when there is nothing to do (an indexed IS NULL probe), so the song
+    endpoint calls it before every lookup - a page for the song that started
+    seconds ago must not 404 just because the worker hasn't run yet.
+    """
+    rows = conn.execute("SELECT id, artist, song FROM tracks WHERE slug IS NULL").fetchall()
+    if rows:
+        conn.executemany(
+            "UPDATE tracks SET slug = ? WHERE id = ?",
+            [(slug_fn(r["artist"], r["song"]), r["id"]) for r in rows],
+        )
+    return len(rows)
+
+
+def song_tracks_since(conn, since_id: int) -> list[sqlite3.Row]:
+    """Rows that have a song page, oldest first - the metadata worker's queue."""
+    return conn.execute(
+        "SELECT id, slug, artist, song FROM tracks "
+        "WHERE id > ? AND slug IS NOT NULL AND slug != '' ORDER BY id",
+        (since_id,),
+    ).fetchall()
+
+
+def plays_for_slug(conn, slug: str) -> list[sqlite3.Row]:
+    """Every play of one song, newest first (idx_tracks_slug). Ordered by `ts`,
+    not `id`: rows imported by migrate.py needn't be in chronological id order."""
+    return conn.execute(
+        "SELECT id, ts, artist, song FROM tracks WHERE slug = ? ORDER BY ts DESC, id DESC",
+        (slug,),
+    ).fetchall()
+
+
+def get_song_metadata(conn, slug: str) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT slug, status, data, fetched_at FROM song_metadata WHERE slug = ?", (slug,)
+    ).fetchone()
+
+
+def upsert_song_metadata(conn, slug: str, status: str, data: str, fetched_at: str) -> None:
+    conn.execute(
+        "INSERT INTO song_metadata (slug, status, data, fetched_at) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(slug) DO UPDATE SET status = excluded.status, data = excluded.data, "
+        "fetched_at = excluded.fetched_at",
+        (slug, status, data, fetched_at),
+    )
+
+
 # -- sync_state ---------------------------------------------------------------
 
-def get_sync_cursor(conn, provider: str) -> int:
+def get_sync_cursor(conn, provider: str, default: int | None = 0) -> int | None:
     row = conn.execute(
         "SELECT last_synced_track_id FROM sync_state WHERE provider = ?", (provider,)
     ).fetchone()
-    return row["last_synced_track_id"] if row else 0
+    return row["last_synced_track_id"] if row else default
 
 
 def set_sync_cursor(conn, provider: str, last_synced_track_id: int) -> None:

@@ -25,6 +25,7 @@ Fertige Widgets zum Einbinden (Skript, iframe, Bild) stehen in
 | `GET /api/now` | die neuesten Titel + die von heute | `*` |
 | `GET /api/live` | läuft der Stream gerade, und seit wann? | `*` |
 | `GET /embed.svg` | dieselbe Karte als Bild (siehe embedding.md) | `*` |
+| `GET /api/songs/{artist}/{song}` | ein Titel: alle Einsätze + Cover, Album, Künstler:in | nein |
 | `GET /healthz` | Health-Check des Webservers | — |
 
 **Nur `/api/now`, `/api/live` und `/embed.svg` schicken `Access-Control-Allow-Origin: *`.**
@@ -126,6 +127,42 @@ läuft oder der Stream vor einer Stunde ausgefallen ist. `on_air` beantwortet ge
 Unterschied und ist `false`, sobald die letzte erfolgreiche Icecast-Abfrage länger als drei
 Poll-Intervalle zurückliegt. `since` ist der Beginn des aktuellen Titels (für ein „läuft
 seit 2:28"); `listeners` kann `null` sein.
+
+### `/api/songs/{artist}/{song}` — ein einzelner Titel
+
+Dieselben Daten wie die Titelseite `https://leibniz-fm.lukassanner.de/{artist}/{song}`.
+Die beiden Pfadteile sind Slugs: kleingeschrieben, Umlaute als `ae`/`oe`/`ue`/`ss`,
+Akzente entfernt, alles außer Buchstaben und Ziffern wird zu `-`
+(`Die Ärzte - Schrei nach Liebe` → `/die-aerzte/schrei-nach-liebe`).
+
+```bash
+curl -s "https://leibniz-fm.lukassanner.de/api/songs/the-strokes/i-can-t-win?fetch=0" | jq
+```
+
+```json
+{
+  "slug": "the-strokes/i-can-t-win",
+  "artist": "The Strokes", "song": "I Can't Win",
+  "server_time": "2026-09-17T11:24:14",
+  "plays": {"count": 2, "first": "2026-09-16T21:47:10", "last": "2026-09-17T11:14:06",
+            "recent": ["2026-09-17T11:14:06", "2026-09-16T21:47:10"]},
+  "metadata": {
+    "status": "found", "fetched_at": "2026-09-17T11:14:20", "needs_fetch": false,
+    "data": {"recording": {…}, "album": {…}, "cover": {"url": "https://coverartarchive.org/…"},
+             "genres": […], "artist": {…}, "videos": […],
+             "sources": {"musicbrainz": "found", "discogs": "found", "wikidata": "found"}}
+  }
+}
+```
+
+`plays.recent` sind höchstens die 50 neuesten Einsätze, `count` ist immer die volle Zahl.
+Die Infos stammen aus MusicBrainz/Cover Art Archive (CC0), Discogs („Data provided by
+Discogs") und Wikidata/Wikipedia (Texte CC BY-SA 4.0) — bei Weiterverwendung bitte nennen.
+
+`metadata.status` ist `found`, `partial` (eine Quelle hat nicht geantwortet), `missing`,
+`error`, `pending` (noch nie abgefragt) oder `disabled`. Ohne `fetch=0` werden fehlende
+Infos **vor** der Antwort abgerufen — beim ersten Mal kann das einige Sekunden dauern,
+danach kommt alles aus dem Cache. Unbekannte Titel liefern `404`.
 
 ### Spielregeln
 

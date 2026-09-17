@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Titel — Leibniz.fm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
+<style>
+  /* Same tokens as index.html - keep the two in step. */
+  :root{
+    --bg:#141935;
+    --surface:#1b2247;
+    --surface-2:#242c57;
+    --text:#d9dbec;
+    --heading:#ffffff;
+    --muted:#8d91b8;
+    --accent:#4ade80;
+    --accent-strong:#31b968;
+    --accent-soft:rgba(74,222,128,.16);
+    --violet:#b9a3f5;
+    --violet-soft:rgba(185,163,245,.14);
+    --line:rgba(255,255,255,.09);
+    --radius-lg:22px;
+    --radius-md:14px;
+    --sans:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color-scheme:dark;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:var(--sans);font-size:15.5px;line-height:1.55;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  img{max-width:100%}
+  [hidden]{display:none!important}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{color:var(--accent-strong)}
+  svg{display:block}
+
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+
+  /* ---------- header ---------- */
+  header.site{padding:26px 0;border-bottom:1px solid var(--line)}
+  .header-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;color:inherit}
+  .brand:hover{color:inherit}
+  .brand-dot{
+    width:11px;height:11px;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%,var(--violet),#8a6fe0 78%);flex:none;
+  }
+  .wordmark{font-weight:700;font-size:1.3rem;letter-spacing:.01em;color:var(--heading);margin:0}
+  .wordmark .dot{color:var(--accent)}
+  .wordmark .sub{font-weight:400;color:var(--muted);font-size:.85em;margin-left:.5em}
+  .back{
+    font-size:.85rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;
+    padding:7px 14px;white-space:nowrap;transition:color .15s,border-color .15s;
+  }
+  .back:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;overflow:hidden;isolation:isolate;
+    margin:22px 0;border:1px solid var(--line);border-radius:var(--radius-lg);
+    background:var(--surface);
+  }
+  /* The cover again, blurred into a glow - an <img> rather than a CSS
+     background, so no third-party URL is ever spliced into a style string. */
+  .hero-glow{
+    position:absolute;inset:-30%;z-index:-1;width:160%;height:160%;max-width:none;
+    object-fit:cover;filter:blur(60px) saturate(1.4);opacity:.38;pointer-events:none;
+  }
+  .hero-inner{display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;padding:26px 24px;align-items:center}
+  .cover{
+    position:relative;aspect-ratio:1/1;width:100%;border-radius:var(--radius-md);overflow:hidden;
+    background:linear-gradient(135deg,var(--surface-2),#2e2560);
+    box-shadow:0 18px 40px rgba(0,0,0,.45);
+  }
+  .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .cover .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.22)}
+  .cover .ph svg{width:38%;height:38%}
+  .cover.loading .ph svg{animation:spin 2.4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .cover-credit{display:block;margin-top:8px;font-size:.68rem;color:var(--muted);text-align:center}
+  .cover-credit a{color:var(--muted)}
+  .cover-credit a:hover{color:var(--accent)}
+
+  .eyebrow{font-size:.75rem;color:var(--muted);margin:0 0 6px;letter-spacing:.02em}
+  .hero h1{margin:0;color:var(--heading);font-size:clamp(1.55rem,4.6vw,2.3rem);line-height:1.12;font-weight:700;word-wrap:break-word}
+  .hero-artist{margin:6px 0 0;font-size:clamp(1.05rem,2.8vw,1.25rem);color:var(--violet);font-weight:500;word-wrap:break-word}
+
+  .facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px 18px;margin:18px 0 0}
+  .facts div{min-width:0}
+  .facts dt{font-size:.7rem;color:var(--muted);margin:0}
+  .facts dd{margin:1px 0 0;color:var(--heading);font-size:.9rem;word-wrap:break-word}
+  .facts .wide{grid-column:1 / -1}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .chip{font-size:.72rem;color:var(--violet);border:1px solid rgba(185,163,245,.4);border-radius:999px;padding:3px 11px}
+
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text);
+    border:1px solid var(--line);border-radius:999px;padding:7px 13px;background:rgba(0,0,0,.12);
+    transition:color .15s,border-color .15s;
+  }
+  .btn:hover{color:var(--accent);border-color:var(--accent)}
+  .btn svg{width:14px;height:14px}
+
+  .status{
+    margin:0;padding:12px 24px;border-top:1px solid var(--line);
+    font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:9px;
+  }
+  .status .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.25}}
+
+  /* ---------- panels ---------- */
+  .panel{margin:0 0 22px;padding:22px 24px;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface)}
+  .panel h2{margin:0 0 14px;font-size:1rem;font-weight:600;color:var(--heading)}
+  .panel h2 span{font-weight:400;color:var(--muted)}
+  .panel p{margin:0 0 12px}
+  .source{font-size:.72rem;color:var(--muted)}
+  .source a{color:var(--muted);text-decoration:underline;text-decoration-color:var(--line)}
+  .source a:hover{color:var(--accent)}
+
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+  .stat{background:rgba(255,255,255,.035);border-radius:var(--radius-md);padding:12px 14px;min-width:0}
+  .stat b{display:block;color:var(--heading);font-size:1.25rem;font-weight:600;line-height:1.2;word-wrap:break-word}
+  .stat span{font-size:.72rem;color:var(--muted)}
+  .plays{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 16px}
+  .plays a{display:block;padding:5px 2px;font-family:var(--mono);font-size:.8rem;color:var(--text);border-bottom:1px solid rgba(255,255,255,.05)}
+  .plays a:hover{color:var(--accent)}
+  .more{font-size:.78rem;color:var(--muted);margin:10px 0 0}
+
+  .tracklist{list-style:none;margin:6px 0 12px;padding:0}
+  .tracklist li{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;padding:6px 8px;border-radius:8px;font-size:.88rem}
+  .tracklist li:nth-child(odd){background:rgba(255,255,255,.025)}
+  .tracklist .pos,.tracklist .dur{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+  .tracklist li.current{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent);color:var(--heading);font-weight:600}
+  .tracklist li.current .pos{color:var(--accent)}
+
+  .artist-body{display:grid;grid-template-columns:170px minmax(0,1fr);gap:20px;align-items:start}
+  .artist-body.no-image{grid-template-columns:minmax(0,1fr)}
+  .artist-img{margin:0}
+  .artist-img img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:var(--radius-md);background:var(--surface-2)}
+  .artist-img figcaption{font-size:.68rem;color:var(--muted);margin-top:5px}
+  .artist-img figcaption a{color:var(--muted)}
+  .description{color:var(--heading);font-weight:500;margin:0 0 8px}
+  .extract{white-space:pre-line}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+
+  .videos{list-style:none;margin:0;padding:0}
+  .videos a{display:flex;gap:10px;align-items:baseline;padding:8px 2px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text)}
+  .videos a:hover{color:var(--accent)}
+  .videos .dur{margin-left:auto;font-family:var(--mono);font-size:.76rem;color:var(--muted);flex:none}
+
+  .notice{margin:22px 0;border:1px solid rgba(185,163,245,.4);background:var(--violet-soft);border-radius:var(--radius-lg);padding:20px}
+  .notice h2{font-size:1rem;color:var(--heading);margin:0 0 8px;font-weight:600}
+  .notice p{margin:0}
+
+  footer.site{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:.74rem;margin-top:30px}
+  footer.site p{margin:0 0 6px}
+  footer.site a{color:var(--muted);text-decoration:underline;text-decoration-color:var(--line)}
+  footer.site a:hover{color:var(--accent)}
+
+  @media (max-width:600px){
+    .hero-inner{grid-template-columns:minmax(0,1fr);gap:20px;padding:22px 18px}
+    .cover-wrap{max-width:260px;width:100%;margin:0 auto}
+    .panel{padding:20px 18px}
+    .status{padding:12px 18px}
+    .stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .stats .stat:first-child{grid-column:1 / -1}
+    .artist-body{grid-template-columns:minmax(0,1fr)}
+    .artist-img{max-width:200px}
+    .wordmark .sub{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap header-row">
+    <a class="brand" href="/">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <span class="wordmark">Leibniz<span class="dot">.</span>fm<span class="sub">Playlist-Archiv</span></span>
+    </a>
+    <a class="back" href="/">← Zum Archiv</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="hero" id="hero">
+    <img class="hero-glow" id="glow" alt="" hidden referrerpolicy="no-referrer">
+    <div class="hero-inner">
+      <div class="cover-wrap">
+        <div class="cover loading" id="cover">
+          <div class="ph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          </div>
+        </div>
+        <span class="cover-credit" id="coverCredit" hidden></span>
+      </div>
+      <div>
+        <p class="eyebrow">Lief auf Leibniz.fm</p>
+        <h1 id="songTitle">…</h1>
+        <p class="hero-artist" id="artistName"></p>
+        <dl class="facts" id="facts"></dl>
+        <div class="chips" id="genres"></div>
+        <div class="actions" id="actions"></div>
+      </div>
+    </div>
+    <p class="status" id="status" hidden></p>
+  </section>
+
+  <section class="panel" id="playsPanel" hidden>
+    <h2>Auf Leibniz.fm</h2>
+    <div class="stats" id="stats"></div>
+    <ul class="plays" id="plays"></ul>
+    <p class="more" id="playsMore" hidden></p>
+  </section>
+
+  <section class="panel" id="albumPanel" hidden></section>
+  <section class="panel" id="artistPanel" hidden></section>
+  <section class="panel" id="videosPanel" hidden></section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p id="sources">
+      Songinfos von <a href="https://musicbrainz.org/" target="_blank" rel="noopener noreferrer">MusicBrainz</a>
+      und dem <a href="https://coverartarchive.org/" target="_blank" rel="noopener noreferrer">Cover Art Archive</a>,
+      <a href="https://www.wikidata.org/" target="_blank" rel="noopener noreferrer">Wikidata</a> und
+      <a href="https://www.wikipedia.org/" target="_blank" rel="noopener noreferrer">Wikipedia</a>
+      (Texte unter <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>)<span id="discogsCredit">.</span>
+      <span id="fetchedAt"></span>
+    </p>
+    <p>Mitschnitt von <a href="https://leibniz.fm/" target="_blank" rel="noopener noreferrer">leibniz.fm</a> — ein privates Projekt, nicht mit dem Sender verbunden —
+      <a href="https://github.com/Farbdrucker/leibniz-fm-tracklist" target="_blank" rel="noopener noreferrer">Quellcode</a></p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // Everything rendered below comes from third-party databases, so the DOM is
+  // built with createElement/textContent only - never innerHTML.
+
+  var $ = function(id){ return document.getElementById(id); };
+  var ISO_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/;
+  var DATE_RE = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/;
+
+  var fmtPlay = new Intl.DateTimeFormat("de-DE", {weekday:"short", day:"2-digit", month:"2-digit", year:"numeric"});
+  var fmtDay = new Intl.DateTimeFormat("de-DE", {day:"numeric", month:"long", year:"numeric"});
+  var fmtMonth = new Intl.DateTimeFormat("de-DE", {month:"long", year:"numeric"});
+  var fmtNum = new Intl.NumberFormat("de-DE");
+  var regions = null;
+  try { regions = new Intl.DisplayNames(["de"], {type:"region"}); } catch (e) {}
+
+  var TYPES = {Album:"Album", Single:"Single", EP:"EP", Broadcast:"Sendung", Other:"Sonstiges"};
+  var ARTIST_TYPES = {Group:"Band", Person:"Person", Orchestra:"Orchester", Choir:"Chor", Character:"Figur", Other:"Sonstiges"};
+
+  var ICONS = {
+    spotify: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.871 7.077-.496 9.713 1.115a.623.623 0 01.206.857zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 11-.452-1.492c3.632-1.102 8.147-.568 11.232 1.329a.78.78 0 01.257 1.072zm.105-2.835c-3.223-1.914-8.54-2.09-11.617-1.156a.935.935 0 11-.542-1.79c3.532-1.072 9.404-.865 13.115 1.338a.935.935 0 11-.956 1.608z"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
+  };
+
+  /* ---------------- DOM helpers ---------------- */
+
+  function h(tag, cls, text){
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function isHttp(url){ return typeof url === "string" && /^https?:\/\//i.test(url); }
+
+  function extLink(url, text, cls){
+    var a = h("a", cls, text);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    return a;
+  }
+
+  // Icons are our own constant markup; the label stays textContent.
+  function button(url, label, icon){
+    var a = extLink(url, null, "btn");
+    a.innerHTML = ICONS[icon || "link"];
+    a.appendChild(document.createTextNode(label));
+    return a;
+  }
+
+  function fact(dl, label, value, wide){
+    if (!value) return;
+    var wrap = h("div", wide ? "wide" : null);
+    wrap.appendChild(h("dt", null, label));
+    wrap.appendChild(h("dd", null, value));
+    dl.appendChild(wrap);
+  }
+
+  function image(url, alt, onFail){
+    var img = h("img");
+    img.alt = alt;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.referrerPolicy = "no-referrer";
+    if (onFail) img.addEventListener("error", onFail);
+    img.src = url;
+    return img;
+  }
+
+  /* ---------------- formatting ---------------- */
+
+  function parseTs(s){
+    var m = ISO_RE.exec(s || "");
+    // naive Berlin wall-clock from the tracker - never new Date(isoString)
+    return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
+  }
+
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  function hhmm(d){ return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function dayKey(d){ return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+
+  // "heute"/"gestern" relative to the *server's* day, like embed.js - a
+  // visitor abroad would otherwise see the wrong day boundary.
+  function relDay(d, serverNow){
+    if (!serverNow) return fmtDay.format(d);
+    var today = dayKey(serverNow);
+    var y = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate() - 1);
+    if (dayKey(d) === today) return "heute";
+    if (dayKey(d) === dayKey(y)) return "gestern";
+    return fmtDay.format(d);
+  }
+
+  function releaseDate(s){
+    var m = DATE_RE.exec(s || "");
+    if (!m) return s || "";
+    if (m[3]) return fmtDay.format(new Date(+m[1], +m[2] - 1, +m[3]));
+    if (m[2]) return fmtMonth.format(new Date(+m[1], +m[2] - 1, 1));
+    return m[1];
+  }
+
+  function duration(seconds){
+    if (!seconds && seconds !== 0) return "";
+    seconds = Math.round(seconds);
+    return Math.floor(seconds / 60) + ":" + pad(seconds % 60);
+  }
+
+  function country(code){
+    if (!code || !/^[A-Z]{2}$/.test(code) || !regions) return code || "";
+    try { return regions.of(code) || code; } catch (e) { return code; }
+  }
+
+  // Same rules as slugify() in index.html and tracker/app/textmatch.py.
+  function slugify(s){
+    s = s.normalize("NFC").toLowerCase()
+      .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+    s = s.normalize("NFKD").replace(/\p{M}/gu, "");
+    return s.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "-";
+  }
+
+  function searchQuery(d){ return d.artist + " " + d.song; }
+
+  /* ---------------- rendering ---------------- */
+
+  var parts = location.pathname.split("/").filter(Boolean);
+  var slugPath = parts.slice(0, 2).map(function(p){
+    try { return decodeURIComponent(p); } catch (e) { return p; }
+  });
+  var apiUrl = "/api/songs/" + slugPath.map(encodeURIComponent).join("/");
+
+  function status(text, busy){
+    var el = $("status");
+    el.textContent = "";
+    if (!text){ el.hidden = true; return; }
+    if (busy) el.appendChild(h("span", "pulse"));
+    el.appendChild(document.createTextNode(text));
+    el.hidden = false;
+  }
+
+  function renderBasics(d){
+    document.title = d.song + " – " + d.artist + " · Leibniz.fm";
+    $("songTitle").textContent = d.song;
+    $("artistName").textContent = d.artist;
+
+    var serverNow = parseTs(d.server_time);
+    var plays = d.plays || {};
+    var stats = $("stats");
+    stats.textContent = "";
+    var first = parseTs(plays.first), last = parseTs(plays.last);
+    [
+      [fmtNum.format(plays.count || 0) + "×", "gespielt"],
+      [first ? relDay(first, serverNow) : "—", "zum ersten Mal"],
+      [last ? relDay(last, serverNow) + ", " + hhmm(last) : "—", "zuletzt"]
+    ].forEach(function(s){
+      var box = h("div", "stat");
+      box.appendChild(h("b", null, s[0]));
+      box.appendChild(h("span", null, s[1]));
+      stats.appendChild(box);
+    });
+
+    var list = $("plays");
+    list.textContent = "";
+    (plays.recent || []).forEach(function(ts){
+      var dt = parseTs(ts);
+      if (!dt) return;
+      var li = h("li");
+      var a = h("a", null, fmtPlay.format(dt) + " · " + hhmm(dt));
+      a.href = "/#tag=" + dayKey(dt) + "&um=" + hhmm(dt);
+      a.title = "Im Archiv zeigen, was davor und danach lief";
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+    var more = (plays.count || 0) - (plays.recent || []).length;
+    $("playsMore").hidden = more <= 0;
+    $("playsMore").textContent = more > 0 ? "… und " + fmtNum.format(more) + " frühere Male" : "";
+    $("playsPanel").hidden = false;
+  }
+
+  function renderCover(info, d){
+    var cover = $("cover"), credit = $("coverCredit"), glow = $("glow");
+    var c = info.cover;
+    cover.classList.remove("loading");
+    // Rendered twice when a stale entry is refreshed - start clean.
+    Array.prototype.forEach.call(cover.querySelectorAll("img"), function(old){ old.remove(); });
+    glow.hidden = true;
+    credit.hidden = true;
+    if (!c || !isHttp(c.url)) return;
+
+    var img = image(c.url, "Cover: " + (info.album && info.album.title ? info.album.title : d.song), function(){
+      img.remove();
+      glow.hidden = true;
+      credit.hidden = true;
+    });
+    cover.appendChild(img);
+    glow.src = c.url;
+    glow.hidden = false;
+
+    credit.textContent = "";
+    credit.appendChild(document.createTextNode("Cover: "));
+    credit.appendChild(isHttp(c.source_url) ? extLink(c.source_url, c.source) : document.createTextNode(c.source || ""));
+    credit.hidden = false;
+  }
+
+  function renderHeroFacts(info, d){
+    var album = info.album || {}, rec = info.recording || {};
+    var dl = $("facts");
+    dl.textContent = "";
+    fact(dl, TYPES[album.type] || "Album", album.title);
+    fact(dl, "Erschienen", releaseDate(rec.first_release || album.date));
+    fact(dl, "Länge", rec.length_ms ? duration(rec.length_ms / 1000) : "");
+    fact(dl, "Label", (album.labels || []).join(", "));
+
+    var chips = $("genres");
+    chips.textContent = "";
+    (info.genres || []).slice(0, 8).forEach(function(g){ chips.appendChild(h("span", "chip", g)); });
+
+    var actions = $("actions");
+    actions.textContent = "";
+    var q = encodeURIComponent(searchQuery(d));
+    actions.appendChild(button("https://open.spotify.com/search/" + q, "Spotify", "spotify"));
+    actions.appendChild(button("https://www.youtube.com/results?search_query=" + q, "YouTube", "play"));
+    if (isHttp(album.discogs_url)) actions.appendChild(button(album.discogs_url, "Discogs"));
+    if (isHttp(rec.musicbrainz_url)) actions.appendChild(button(rec.musicbrainz_url, "MusicBrainz"));
+  }
+
+  function renderAlbum(info, d){
+    var album = info.album || {};
+    var panel = $("albumPanel");
+    panel.textContent = "";
+    if (!album.title){ panel.hidden = true; return; }
+
+    var title = h("h2", null, (TYPES[album.type] || "Album") + " ");
+    title.appendChild(h("span", null, "— " + album.title));
+    panel.appendChild(title);
+
+    var dl = h("dl", "facts");
+    fact(dl, "Veröffentlicht", releaseDate(album.date));
+    fact(dl, "Land", country(album.country));
+    fact(dl, "Label", (album.labels || []).join(", "));
+    fact(dl, "Format", (album.formats || []).join(" · "));
+    if (album.have || album.want){
+      fact(dl, "Auf Discogs", fmtNum.format(album.have || 0) + " haben es, " + fmtNum.format(album.want || 0) + " wollen es", true);
+    }
+    if (dl.childNodes.length){ dl.style.marginTop = "0"; dl.style.marginBottom = "14px"; panel.appendChild(dl); }
+
+    var tracks = album.tracklist || [];
+    if (tracks.length){
+      var own = slugify(d.song);
+      var ol = h("ol", "tracklist");
+      tracks.forEach(function(t){
+        var li = h("li");
+        var slug = slugify(t.title || "");
+        if (slug === own || (own.length > 3 && slug.indexOf(own) === 0)) li.className = "current";
+        li.appendChild(h("span", "pos", t.position || ""));
+        li.appendChild(h("span", null, t.title || ""));
+        li.appendChild(h("span", "dur", t.duration || ""));
+        ol.appendChild(li);
+      });
+      panel.appendChild(ol);
+    }
+
+    var src = h("p", "source");
+    src.appendChild(document.createTextNode("Quelle: "));
+    var sources = [];
+    if (isHttp(album.musicbrainz_url)) sources.push(extLink(album.musicbrainz_url, "MusicBrainz"));
+    if (isHttp(album.discogs_url)) sources.push(extLink(album.discogs_url, "Discogs"));
+    sources.forEach(function(a, i){
+      if (i) src.appendChild(document.createTextNode(", "));
+      src.appendChild(a);
+    });
+    if (sources.length) panel.appendChild(src);
+    panel.hidden = false;
+  }
+
+  function lifeSpan(a){
+    var begin = releaseDate(a.begin), end = releaseDate(a.end);
+    if (!begin && !end) return "";
+    if (a.ended || end) return (begin || "?") + " – " + (end || "?");
+    return "seit " + begin;
+  }
+
+  function renderArtist(info, d){
+    var a = info.artist || {};
+    var panel = $("artistPanel");
+    panel.textContent = "";
+    var hasText = a.description || (a.wikipedia && a.wikipedia.extract) || a.profile;
+    if (!hasText && !a.type && !a.area && !(a.image && a.image.url)){ panel.hidden = true; return; }
+
+    panel.appendChild(h("h2", null, "Über " + (a.name || d.artist)));
+
+    var body = h("div", "artist-body");
+    if (a.image && isHttp(a.image.url)){
+      var fig = h("figure", "artist-img");
+      fig.appendChild(image(a.image.url, a.name || d.artist, function(){
+        fig.remove();
+        body.classList.add("no-image");
+      }));
+      if (isHttp(a.image.source_url)){
+        var cap = h("figcaption");
+        cap.appendChild(extLink(a.image.source_url, /wikimedia/.test(a.image.source_url) ? "Bild: Wikimedia Commons" : "Bild: Discogs"));
+        fig.appendChild(cap);
+      }
+      body.appendChild(fig);
+    } else {
+      body.classList.add("no-image");
+    }
+
+    var text = h("div");
+    if (a.description) text.appendChild(h("p", "description", a.description.charAt(0).toUpperCase() + a.description.slice(1)));
+    if (a.wikipedia && a.wikipedia.extract){
+      text.appendChild(h("p", "extract", a.wikipedia.extract));
+      if (isHttp(a.wikipedia.url)){
+        var wp = h("p", "source");
+        wp.appendChild(document.createTextNode("Aus der " + (a.wikipedia.lang === "de" ? "deutschen" : "englischen") + " "));
+        wp.appendChild(extLink(a.wikipedia.url, "Wikipedia"));
+        wp.appendChild(document.createTextNode(", CC BY-SA 4.0"));
+        text.appendChild(wp);
+      }
+    } else if (a.profile){
+      text.appendChild(h("p", "extract", a.profile));
+      text.appendChild(h("p", "source", "Profil von Discogs (englisch)"));
+    }
+
+    var dl = h("dl", "facts");
+    fact(dl, "Art", ARTIST_TYPES[a.type] || a.type);
+    fact(dl, "Herkunft", [a.begin_area, country(a.country) || a.area].filter(function(x, i, arr){
+      return x && arr.indexOf(x) === i;
+    }).join(", "));
+    fact(dl, a.type === "Person" ? "Lebensdaten" : "Aktiv", lifeSpan(a));
+    fact(dl, "Mitglieder", (a.members || []).join(", "), true);
+    text.appendChild(dl);
+
+    if ((a.genres || []).length){
+      var chips = h("div", "chips");
+      a.genres.forEach(function(g){ chips.appendChild(h("span", "chip", g)); });
+      text.appendChild(chips);
+    }
+
+    var links = h("div", "links");
+    [
+      [a.website, "Website"], [a.bandcamp_url, "Bandcamp"],
+      [a.wikipedia && a.wikipedia.url, "Wikipedia"], [a.wikidata_url, "Wikidata"],
+      [a.musicbrainz_url, "MusicBrainz"], [a.discogs_url, "Discogs"]
+    ].forEach(function(l){ if (isHttp(l[0])) links.appendChild(button(l[0], l[1])); });
+    if (links.childNodes.length) text.appendChild(links);
+
+    body.appendChild(text);
+    panel.appendChild(body);
+    panel.hidden = false;
+  }
+
+  function renderVideos(info){
+    var videos = (info.videos || []).filter(function(v){ return isHttp(v.url); });
+    var panel = $("videosPanel");
+    panel.textContent = "";
+    if (!videos.length){ panel.hidden = true; return; }
+    panel.appendChild(h("h2", null, "Videos"));
+    var ul = h("ul", "videos");
+    videos.forEach(function(v){
+      var li = h("li");
+      var a = extLink(v.url, null);
+      a.appendChild(h("span", null, "▶"));
+      a.appendChild(h("span", null, v.title || v.url));
+      if (v.duration) a.appendChild(h("span", "dur", duration(v.duration)));
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    panel.appendChild(ul);
+    panel.appendChild(h("p", "source", "Verlinkt über Discogs · öffnet YouTube"));
+    panel.hidden = false;
+  }
+
+  function renderMetadata(d, fetching){
+    var meta = d.metadata || {};
+    var info = meta.data || {};
+    var sources = info.sources || {};
+
+    if (!fetching || meta.status !== "pending"){
+      renderCover(info, d);
+      renderHeroFacts(info, d);
+      renderAlbum(info, d);
+      renderArtist(info, d);
+      renderVideos(info);
+    } else {
+      renderHeroFacts({}, d);
+    }
+
+    if (fetching) status("Suche Cover und Infos bei MusicBrainz, Discogs und Wikidata …", true);
+    else if (meta.status === "missing") status("Zu diesem Titel haben MusicBrainz und Discogs nichts gefunden.");
+    else if (meta.status === "error") status("Die Musikdatenbanken sind gerade nicht erreichbar — später nochmal versuchen.");
+    else if (meta.status === "partial") status("Nicht alle Quellen haben geantwortet, die Infos sind vielleicht unvollständig.");
+    else status("");
+
+    if (sources.discogs === "found"){
+      $("discogsCredit").textContent = ". Data provided by ";
+      $("discogsCredit").appendChild(extLink("https://www.discogs.com/", "Discogs"));
+      $("discogsCredit").appendChild(document.createTextNode("."));
+    }
+    var fetched = parseTs(meta.fetched_at);
+    $("fetchedAt").textContent = fetched ? "Stand: " + fmtDay.format(fetched) + "." : "";
+  }
+
+  function notice(title, text){
+    var n = $("notice");
+    n.textContent = "";
+    n.appendChild(h("h2", null, title));
+    n.appendChild(h("p", null, text));
+    n.hidden = false;
+    $("hero").hidden = true;
+  }
+
+  function get(fetchInfo){
+    return fetch(apiUrl + "?fetch=" + (fetchInfo ? 1 : 0), {cache: "no-store"}).then(function(res){
+      if (res.status === 404) throw {notFound: true};
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    });
+  }
+
+  function fail(err){
+    if (err && err.notFound){
+      document.title = "Nicht gefunden · Leibniz.fm";
+      notice("Diesen Titel gibt es im Archiv nicht", "Vielleicht lief er unter anderer Schreibweise — die Suche im Archiv findet ihn.");
+    } else {
+      notice("Gerade nicht erreichbar", "Die Titelinfos konnten nicht geladen werden. Bitte später nochmal versuchen.");
+    }
+  }
+
+  if (slugPath.length !== 2){
+    fail({notFound: true});
+    return;
+  }
+
+  // Two steps: the play history is instant from the database; cover and
+  // background info may need a few seconds of API calls the first time.
+  get(false).then(function(d){
+    renderBasics(d);
+    var needsFetch = d.metadata && d.metadata.needs_fetch && d.metadata.status !== "disabled";
+    renderMetadata(d, needsFetch && d.metadata.status === "pending");
+    if (!needsFetch) return;
+    if (d.metadata.status !== "pending") status("Aktualisiere Infos …", true);
+    return get(true).then(function(full){
+      renderBasics(full);
+      renderMetadata(full, false);
+    }, function(){
+      // Keep whatever the first answer showed.
+      renderMetadata(d, false);
+    });
+  }).catch(fail);
+})();
+</script>
+</body>
+</html>

@@ -40,6 +40,15 @@ docker compose up -d
 open https://localhost/
 ```
 
+## Titelseiten
+
+Jeder Titel hat eine eigene Seite, z. B. `/arctic-monkeys/fluorescent-adolescent`: Cover,
+Album mit Tracklist, Infos zur Band und wann der Song auf leibniz.fm lief. Die Daten kommen
+aus [MusicBrainz](https://musicbrainz.org/), dem [Cover Art Archive](https://coverartarchive.org/),
+[Wikidata](https://www.wikidata.org/)/Wikipedia und — mit `DISCOGS_CONSUMER_KEY`/`_SECRET`
+in der `.env` — [Discogs](https://www.discogs.com/). Neu gespielte Titel werden sofort
+nachgeschlagen, ältere beim ersten Aufruf ihrer Seite.
+
 ## Einbetten
 
 Die Tracklist gibt es auch als Widget für fremde Seiten — als `<script>`-Embed für WordPress,

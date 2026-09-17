@@ -95,12 +95,24 @@
   }
   .now .time-badge{
     flex:none;
-    font-family:var(--mono);font-size:.82rem;font-weight:600;
+    font-family:var(--mono);font-size:.72rem;font-weight:600;
     color:var(--accent);background:var(--accent-soft);
-    border-radius:999px;padding:6px 12px;
+    border-radius:999px;padding:2px 9px;margin-left:6px;
   }
-  .now .titles{min-width:0}
+  .now .cover{
+    flex:none;position:relative;width:84px;height:84px;border-radius:12px;overflow:hidden;
+    background:linear-gradient(135deg,var(--surface-2),#2e2560);
+    box-shadow:0 8px 22px rgba(0,0,0,.35);
+    display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.22);
+  }
+  .now .cover svg{width:36%;height:36%}
+  .now .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .now .titles{min-width:0;flex:1 1 180px}
   .now .eyebrow{font-size:.75rem;color:var(--muted);margin:0 0 3px}
+  .now .facts{font-size:.8rem;color:var(--muted);margin-top:3px;word-wrap:break-word}
+  a.meta{display:block;color:inherit;border-radius:6px}
+  a.meta:hover .artist{color:var(--accent)}
+  a.meta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .now .artist{color:var(--heading);font-weight:700;font-size:1.28rem;line-height:1.25;word-wrap:break-word}
   .now .song{color:var(--text);font-size:1rem;opacity:.85;word-wrap:break-word}
   .now .sp{margin-left:auto}
@@ -158,12 +170,13 @@
   .finder-fields{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-bottom:16px}
   .field{display:flex;flex-direction:column;gap:5px}
   .field label{font-size:.75rem;color:var(--muted)}
-  input[type="date"]{
+  input[type="date"],input[type="time"]{
     font-family:var(--mono);font-size:.82rem;color:var(--text);
     background:var(--surface);border:1px solid var(--line);border-radius:9px;
     padding:8px 10px;
   }
-  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.55);cursor:pointer}
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.55);cursor:pointer}
   input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:.85rem;color:var(--text)}
@@ -239,6 +252,18 @@
   }
   .track:hover{background:rgba(255,255,255,.03);border-radius:8px}
   .track .time{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+  a.time:hover{color:var(--accent)}
+  a.time-badge:hover{color:var(--heading)}
+  /* "Welcher Song lief um …?" — the row on air at the chosen time, plus its
+     ±15 min neighbours, since remembered times are rarely exact. */
+  .track.near{background:rgba(255,255,255,.035);border-radius:8px}
+  .track.onair{
+    background:var(--accent-soft);border-radius:8px;
+    box-shadow:inset 3px 0 0 var(--accent);
+    padding-left:10px;scroll-margin:120px;
+  }
+  .track.onair .time{color:var(--accent)}
+  .track .onair-label{display:block;font-size:.68rem;color:var(--accent);margin-bottom:1px}
   .track .meta{min-width:0}
   .track .artist{color:var(--heading);font-weight:600;font-size:.94rem;word-wrap:break-word}
   .track .song{color:var(--text);font-size:.88rem;opacity:.82;word-wrap:break-word}
@@ -330,6 +355,10 @@
               <label for="to">Bis</label>
               <input id="to" type="date">
             </div>
+            <div class="field">
+              <label for="at">Uhrzeit</label>
+              <input id="at" type="time">
+            </div>
             <label class="switch"><input id="hide" type="checkbox"> Stationskennungen ausblenden</label>
             <button id="reset" class="ghost-btn" type="button" hidden>Zurücksetzen</button>
           </div>
@@ -342,6 +371,7 @@
             <div class="cal-grid" id="calGrid"></div>
             <p class="cal-hint">
               Helligkeit = Titel pro Tag. Klick wählt einen Tag, <kbd>Shift</kbd>+Klick spannt einen Zeitraum auf.
+              Mit <em>Uhrzeit</em> springt die Liste zum Titel, der zu dem Zeitpunkt lief.
             </p>
           </div>
         </div>
@@ -396,6 +426,7 @@
     query: "",
     from: null,          // "YYYY-MM-DD"
     to: null,            // "YYYY-MM-DD"
+    at: null,            // "HH:MM" — "Welcher Song lief um …?"
     hideStations: false,
     year: null,
     month: null          // 0-based
@@ -403,7 +434,7 @@
 
   var $ = function(id){ return document.getElementById(id); };
   var el = {
-    q: $("q"), from: $("from"), to: $("to"), hide: $("hide"),
+    q: $("q"), from: $("from"), to: $("to"), at: $("at"), hide: $("hide"),
     reset: $("reset"), reload: $("reload"),
     prev: $("prev"), next: $("next"),
     calTitle: $("calTitle"), calGrid: $("calGrid"),
@@ -440,6 +471,7 @@
         time: m[4] + ":" + m[5],
         artist: artist,
         song: song || raw,
+        songField: song,     // exactly what the tracker slugs, unlike the display fallback above
         raw: raw || (artist ? artist + " - " + song : song),
         isStation: artist === "" || STATION_ARTISTS.indexOf(artist.toLowerCase()) !== -1
       });
@@ -523,13 +555,45 @@
     return "https://open.spotify.com/search/" + encodeURIComponent(q);
   }
 
+  // Shareable link to the moment a track started — see readHash().
+  function permalink(t){
+    return "#tag=" + t.dayKey + "&um=" + t.time;
+  }
+
+  // MUST match slugify() in tracker/app/textmatch.py: the tracker resolves the
+  // /<artist>/<song> links built here, so any drift turns them into 404s.
+  function slugify(s){
+    s = s.normalize("NFC").toLowerCase()
+      .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+    s = s.normalize("NFKD").replace(/\p{M}/gu, "");
+    return s.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "-";
+  }
+
+  // The song's own page, or null for jingles/station IDs. Memoized on the
+  // track, since every render rebuilds the whole list.
+  function songPath(t){
+    if (t.isStation) return null;
+    if (t.path === undefined){
+      t.path = "/" + encodeURIComponent(slugify(t.artist)) + "/" + encodeURIComponent(slugify(t.songField));
+    }
+    return t.path;
+  }
+
+  function titles(t, ts, lead){
+    var inner = (lead || "") +
+      (t.artist ? '<div class="artist">' + highlight(t.artist, ts) + "</div>" : "") +
+      '<div class="song">' + highlight(t.song, ts) + "</div>";
+    var path = songPath(t);
+    return path ?
+      '<a class="meta" href="' + path + '" title="Mehr zu diesem Titel">' + inner + "</a>" :
+      '<div class="meta">' + inner + "</div>";
+  }
+
   function trackRow(t, ts, extraClass){
+    var onair = extraClass === "onair";
     return '<div class="track' + (t.isStation ? " station" : "") + (extraClass ? " " + extraClass : "") + '">' +
-      '<div class="time">' + t.time + "</div>" +
-      '<div class="meta">' +
-        (t.artist ? '<div class="artist">' + highlight(t.artist, ts) + "</div>" : "") +
-        '<div class="song">' + highlight(t.song, ts) + "</div>" +
-      "</div>" +
+      '<a class="time" href="' + permalink(t) + '" title="Link zu diesem Titel">' + t.time + "</a>" +
+      titles(t, ts, onair ? '<span class="onair-label">lief um ' + state.at + "</span>" : "") +
       '<a class="sp" href="' + escapeHtml(spotifyUrl(t)) + '" target="_blank" rel="noopener noreferrer"' +
       ' title="Auf Spotify suchen" aria-label="Auf Spotify suchen: ' + escapeHtml(t.raw) + '">' +
       SPOTIFY_ICON + "</a>" +
@@ -578,12 +642,14 @@
     var latest = todays[todays.length - 1];
     var earlier = todays.slice(0, -1).reverse();
 
+    var info = latestInfo(latest);
     var html = '<div class="now">' +
-      '<div class="time-badge">' + latest.time + "</div>" +
+      nowCover(latest, info) +
       '<div class="titles">' +
-        '<p class="eyebrow">Zuletzt gespielt</p>' +
-        (latest.artist ? '<div class="artist">' + highlight(latest.artist, ts) + "</div>" : "") +
-        '<div class="song">' + highlight(latest.song, ts) + "</div>" +
+        '<p class="eyebrow">Zuletzt gespielt' +
+          '<a class="time-badge" href="' + permalink(latest) + '" title="Link zu diesem Titel">' + latest.time + "</a></p>" +
+        titles(latest, ts) +
+        nowFacts(info) +
       "</div>" +
       '<a class="sp" href="' + escapeHtml(spotifyUrl(latest)) + '" target="_blank" rel="noopener noreferrer"' +
       ' title="Auf Spotify suchen" aria-label="Auf Spotify suchen: ' + escapeHtml(latest.raw) + '">' +
@@ -597,6 +663,53 @@
     }
 
     el.todayBody.innerHTML = html;
+  }
+
+  /* ---------------- latest song info ---------------- */
+
+  // Cover + album facts, only for the newest track: one small request instead
+  // of hundreds, and the song pages carry everything else. Keyed by path, so
+  // re-renders (every keystroke in the search) never refetch.
+  var songInfo = {};
+  var NOTE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">' +
+    '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>';
+
+  function latestInfo(t){
+    var path = songPath(t);
+    if (!path) return null;
+    var entry = songInfo[path];
+    if (entry) return entry.info;
+    songInfo[path] = {info: null};
+    fetch("/api/songs" + path, {cache: "no-store"})
+      .then(function(res){
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function(d){
+        songInfo[path].info = (d.metadata && d.metadata.data) || {};
+        renderToday(baseSet());
+      })
+      .catch(function(){ songInfo[path].info = {}; });
+    return null;
+  }
+
+  function isHttp(url){ return typeof url === "string" && /^https?:\/\//i.test(url); }
+
+  function nowCover(t, info){
+    var path = songPath(t);
+    if (!path) return "";
+    var cover = info && info.cover;
+    var img = cover && isHttp(cover.url) ?
+      '<img src="' + escapeHtml(cover.url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : "";
+    return '<a class="cover" href="' + path + '" aria-label="Mehr zu diesem Titel">' + NOTE_ICON + img + "</a>";
+  }
+
+  function nowFacts(info){
+    if (!info) return "";
+    var album = info.album || {}, rec = info.recording || {};
+    var year = (rec.first_release || album.date || "").slice(0, 4);
+    var bits = [album.title, year, (album.labels || [])[0]].filter(Boolean);
+    return bits.length ? '<div class="facts">' + escapeHtml(bits.join(" · ")) + "</div>" : "";
   }
 
   /* ---------------- calendar ---------------- */
@@ -644,6 +757,92 @@
     el.calGrid.innerHTML = html;
   }
 
+  /* ---------------- time lookup ---------------- */
+
+  var NEAR_MINUTES = 15;
+  var TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+  var DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+  function minutesOf(hhmm){
+    return +hhmm.slice(0, 2) * 60 + +hhmm.slice(3, 5);
+  }
+
+  // A time only means something on one day. Keep a single selected day;
+  // otherwise assume the listener means today — or yesterday, if that time
+  // hasn't happened yet today ("gestern Abend" is likelier than a typo).
+  function resolveAtDay(){
+    if (!state.at || (state.from && state.from === state.to)) return;
+    var now = new Date();
+    var nowHHMM = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+    var day = state.at > nowHHMM ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1) : now;
+    state.from = state.to = keyOf(day);
+    state.year = day.getFullYear();
+    state.month = day.getMonth();
+  }
+
+  // Each row is a title *change* that lasts until the next one, so the track
+  // on air at HH:MM is the last visible one that started at or before it
+  // (or the day's first, if the time precedes everything).
+  function findOnAir(rows){
+    if (!state.at || !state.from || state.from !== state.to) return null;
+    var hit = null;
+    for (var i = 0; i < rows.length; i++){
+      var t = rows[i];
+      if (t.dayKey !== state.from) continue;
+      if (t.time <= state.at || !hit) hit = t;
+      if (t.time > state.at) break;
+    }
+    return hit;
+  }
+
+  function timeClass(t, onair){
+    if (!onair) return "";
+    if (t === onair) return "onair";
+    if (t.dayKey === onair.dayKey && Math.abs(minutesOf(t.time) - minutesOf(state.at)) <= NEAR_MINUTES) return "near";
+    return "";
+  }
+
+  /* ---------------- URL hash ---------------- */
+
+  // #q=…&von=…&bis=…  or  #tag=…&um=…  — every view is a shareable link.
+  // hideStations stays out: it's a per-viewer preference (localStorage).
+  var pendingScroll = false;
+
+  function readHash(){
+    var p = new URLSearchParams(location.hash.slice(1));
+    var tag = p.get("tag"), von = p.get("von"), bis = p.get("bis"), um = p.get("um");
+    state.query = (p.get("q") || "").trim().slice(0, 100);
+    state.from = DAY_RE.test(tag || "") ? tag : (DAY_RE.test(von || "") ? von : null);
+    state.to = DAY_RE.test(tag || "") ? tag : (DAY_RE.test(bis || "") ? bis : null);
+    if (state.from && state.to && state.from > state.to){ var sw = state.from; state.from = state.to; state.to = sw; }
+    state.at = TIME_RE.test(um || "") ? um : null;
+    resolveAtDay();
+
+    var anchor = state.from || state.to;
+    if (anchor){
+      state.year = +anchor.slice(0, 4);
+      state.month = +anchor.slice(5, 7) - 1;
+    }
+    el.q.value = state.query;
+    syncInputs();
+    if (state.at) pendingScroll = true;
+  }
+
+  function writeHash(){
+    var parts = [];
+    if (state.query) parts.push("q=" + encodeURIComponent(state.query));
+    if (state.from && state.from === state.to) parts.push("tag=" + state.from);
+    else {
+      if (state.from) parts.push("von=" + state.from);
+      if (state.to) parts.push("bis=" + state.to);
+    }
+    if (state.at) parts.push("um=" + state.at);
+    var next = parts.length ? "#" + parts.join("&") : location.pathname + location.search;
+    if ((parts.length ? next : "") !== location.hash){
+      try { history.replaceState(null, "", next); } catch (e) {}
+    }
+  }
+
   /* ---------------- archive list ---------------- */
 
   function renderList(visible, noFilters){
@@ -655,6 +854,7 @@
     if (state.query) chips += '<span class="chip">„' + escapeHtml(state.query) + "“</span>";
     if (state.from && state.to && state.from !== state.to) chips += '<span class="chip">' + state.from + " → " + state.to + "</span>";
     else if (state.from || state.to) chips += '<span class="chip">' + (state.from || state.to) + "</span>";
+    if (state.at) chips += '<span class="chip">um ' + state.at + "</span>";
     el.chips.innerHTML = chips;
 
     // In the default, unfiltered view today's tracks already lead the page in
@@ -676,12 +876,13 @@
     });
     groups.sort().reverse();
 
+    var onair = findOnAir(rows);
     var html = "";
     groups.forEach(function(key){
       var dayRows = byKey[key];
       html += '<section class="day-group"><h2 class="day-title">' + escapeHtml(labelOf(key)) +
               "<span>" + dayRows.length + " Titel</span></h2>";
-      dayRows.forEach(function(t){ html += trackRow(t, ts); });
+      dayRows.forEach(function(t){ html += trackRow(t, ts, timeClass(t, onair)); });
       html += "</section>";
     });
     el.list.innerHTML = html;
@@ -692,19 +893,27 @@
   function render(){
     var base = baseSet();
     var visible = base.filter(inWindow);
-    var noFilters = !state.query && !state.from && !state.to;
+    var noFilters = !state.query && !state.from && !state.to && !state.at;
 
     renderToday(base);
     renderCalendar(base);
     renderList(visible, noFilters);
 
     el.reset.hidden = noFilters;
-    el.finderBadge.hidden = !(state.from || state.to);
+    el.finderBadge.hidden = !(state.from || state.to || state.at);
+    writeHash();
+
+    if (pendingScroll){
+      pendingScroll = false;
+      var hit = el.list.querySelector(".track.onair");
+      if (hit) hit.scrollIntoView({block: "center"});
+    }
   }
 
   function syncInputs(){
     el.from.value = state.from || "";
     el.to.value = state.to || "";
+    el.at.value = state.at || "";
   }
 
   /* ---------------- events ---------------- */
@@ -725,6 +934,19 @@
     if (state.from && state.to && state.to < state.from){ state.from = state.to; syncInputs(); }
     render();
   });
+  el.at.addEventListener("change", function(){
+    state.at = TIME_RE.test(el.at.value) ? el.at.value : null;
+    resolveAtDay();
+    syncInputs();
+    pendingScroll = !!state.at;
+    render();
+  });
+
+  window.addEventListener("hashchange", function(){
+    readHash();
+    pendingScroll = true;
+    if (tracks.length) render();
+  });
 
   el.hide.addEventListener("change", function(){
     state.hideStations = el.hide.checked;
@@ -733,7 +955,7 @@
   });
 
   el.reset.addEventListener("click", function(){
-    state.query = ""; state.from = null; state.to = null;
+    state.query = ""; state.from = null; state.to = null; state.at = null;
     el.q.value = ""; syncInputs();
     render();
   });
@@ -844,6 +1066,7 @@
     if (localStorage.getItem(STORE_KEY) === "1"){ state.hideStations = true; el.hide.checked = true; }
   } catch (e) {}
 
+  readHash();
   load();
 })();
 </script>

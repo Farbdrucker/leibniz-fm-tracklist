@@ -7,6 +7,8 @@ services:
       SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
       SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
       SPOTIFY_REFRESH_TOKEN: ${SPOTIFY_REFRESH_TOKEN:-}
+      DISCOGS_CONSUMER_KEY: ${DISCOGS_CONSUMER_KEY:-}
+      DISCOGS_CONSUMER_SECRET: ${DISCOGS_CONSUMER_SECRET:-}
     volumes:
       - ./config.toml:/config/config.toml:ro
       - tracker-data:/data

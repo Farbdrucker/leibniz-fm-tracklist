@@ -43,10 +43,26 @@ class ProviderSettings:
 
 
 @dataclass
+class MetadataSettings:
+    """Song info (cover art, album, artist bio) for the /<artist>/<song> pages.
+
+    MusicBrainz, the Cover Art Archive and Wikidata/Wikipedia need no account;
+    Discogs is used only when DISCOGS_CONSUMER_KEY/_SECRET are set.
+    """
+    enabled: bool = True
+    # MusicBrainz and Wikimedia ask API clients to identify themselves with a
+    # way to reach the operator - a URL is enough, it needn't be an e-mail.
+    contact: str = "https://github.com/Farbdrucker/leibniz-fm-tracklist"
+    discogs_key: str = ""
+    discogs_secret: str = ""
+
+
+@dataclass
 class Settings:
     tracker: TrackerSettings
     api: ApiSettings = field(default_factory=ApiSettings)
     providers: list[ProviderSettings] = field(default_factory=list)
+    metadata: MetadataSettings = field(default_factory=MetadataSettings)
 
 
 def _env_secret(prefix: str, name: str) -> str:
@@ -105,7 +121,15 @@ def load(path: str | Path) -> Settings:
 
     providers = [_load_provider(p) for p in raw.get("providers", [])]
 
-    return Settings(tracker=tracker, api=api, providers=providers)
+    metadata_raw = raw.get("metadata", {})
+    metadata = MetadataSettings(
+        enabled=metadata_raw.get("enabled", True),
+        contact=metadata_raw.get("contact", MetadataSettings.contact),
+        discogs_key=_env_secret("DISCOGS", "CONSUMER_KEY"),
+        discogs_secret=_env_secret("DISCOGS", "CONSUMER_SECRET"),
+    )
+
+    return Settings(tracker=tracker, api=api, providers=providers, metadata=metadata)
 
 
 def config_path() -> str:

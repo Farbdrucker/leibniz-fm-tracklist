@@ -69,8 +69,8 @@ browser ──443──> caddy ──> web:8080 ──> tracker:8000 ──> SQL
                           /api proxy)       provider sync) ──────┘
 ```
 
-- **`tracker/`** — owns the data. A `Poller` thread (`ingest.py`) hits Icecast every `poll_interval`s and inserts a row only when the title *changes*; separate per-provider sync threads push tracks to streaming playlists. Both are started from the FastAPI `lifespan` in `main.py`. Its read API (`api.py`) is deliberately just `/health`, `/tracks`, and `/now`.
-- **`web/`** — a thin shell: serves the static UI and proxies `/api/tracks` + `/api/now` to the tracker. The browser never talks to the tracker directly, which is why *the tracker* needs no CORS config and stays off any published port. `web` sets one CORS header, on `/api/now` only — see "Embedding" below.
+- **`tracker/`** — owns the data. A `Poller` thread (`ingest.py`) hits Icecast every `poll_interval`s and inserts a row only when the title *changes*; separate per-provider sync threads push tracks to streaming playlists; a `MetadataWorker` (`metadata/`) slugs new rows and fetches song info. All are started from the FastAPI `lifespan` in `main.py`. Its read API (`api.py`) is deliberately just `/health`, `/tracks`, `/now`, `/live`, and `/songs/{artist}/{song}`.
+- **`web/`** — a thin shell: serves the static UI (plus `song.html` for every `/{artist}/{song}` path) and proxies `/api/tracks`, `/api/now`, `/api/live`, `/api/songs/...` to the tracker. The browser never talks to the tracker directly, which is why *the tracker* needs no CORS config and stays off any published port. `web` sets one CORS header, on `/api/now` only — see "Embedding" below.
 - **`caddy/`** — TLS termination + reverse proxy, domain from `$DOMAIN`.
 
 ### Invariants that span multiple files
@@ -81,9 +81,21 @@ browser ──443──> caddy ──> web:8080 ──> tracker:8000 ──> SQL
 
 `/now` is the one sanctioned carve-out, and it reimplements *none* of that logic — no search, no station detection, no aggregation. It answers only "the newest few rows" and "one indexed day", which the bulk dump can't do cheaply, because the embedded widgets run on a foreign page that must not re-download the whole archive every 30s per visitor. It also returns `day` and `server_time`, so the widget never derives "today" or a track's age from the *visitor's* clock. Adding a filter to `/now` would break the invariant; adding one to `/tracks` still would too.
 
-**The entire UI is one dependency-free file**: `web/app/static/index.html` (~850 lines of HTML + CSS + ES5-style vanilla JS, no framework, no build step). Design tokens live as CSS custom properties in `:root`. Google Fonts is the only external resource.
+**The UI is dependency-free static files**: `web/app/static/index.html` (the archive) and `song.html` (song pages) — HTML + CSS + ES5-style vanilla JS, no framework, no build step. Design tokens live as CSS custom properties in `:root`, duplicated in both files. Google Fonts is the only external resource besides the cover/artist images on song pages.
 
 **Tracks without a `" - "` separator have an empty artist** (`split_title()`) — these are jingles, moderation, or station IDs. They're excluded from provider sync at the SQL level (`tracks_for_sync`: `WHERE artist != ''`), and the UI treats them as "Stationskennungen" via its own `STATION_ARTISTS` list, hideable by a toggle.
+
+### Song pages and metadata
+
+Every track with an artist has a page at `/<artist-slug>/<song-slug>` (e.g. `/arctic-monkeys/fluorescent-adolescent`).
+
+- **The slug rule exists twice**: `slugify()` in `tracker/app/textmatch.py` and in `web/app/static/index.html` (a copy in `song.html` only highlights the tracklist). The page builds links in JS, the tracker resolves them against `tracks.slug` — change one without the other and links 404. `song_slug()` returns `''` for rows without an artist. After changing the rule, `UPDATE tracks SET slug = NULL`; the worker recomputes.
+- **`tracks.slug` is filled by `MetadataWorker`, not by `ingest.py`** (and `/songs` calls `db.assign_slugs()` before every lookup, so a just-started song never 404s). The column was added by an in-place migration in `db.init_schema()`.
+- **Sources** (`tracker/app/metadata/`): MusicBrainz + Cover Art Archive (backbone; its artist entry links to Wikidata), Discogs (only with `DISCOGS_CONSUMER_KEY/_SECRET`; label, format, tracklist, videos), Wikidata + Wikipedia (German first). Each is isolated in `Enricher.lookup`; `merge()` produces the one display-ready document `song.html` renders. Rate limiters are module-level, shared by worker and on-demand threads (MusicBrainz: 1 req/s per IP).
+- **Cache** is `song_metadata` (JSON per slug) with a refresh policy per status (`REFRESH_AFTER`). An all-error refetch never overwrites earlier `found`/`partial` data. `Enricher.ensure` single-flights per slug.
+- **The worker does not crawl the archive**: on first start its cursor (`sync_state` row `metadata`) begins 10 rows back; older songs are fetched on demand when a page is opened. `index.html` fetches info only for the newest track (the "Zuletzt gespielt" hero).
+- `/songs` is the second sanctioned server-side lookup next to `/now`: an indexed identity lookup ("plays of this song"), no filtering. `web`'s proxy for it is **not** memoized — `_memoized`'s global lock would stall the embeds behind a multi-second first fetch.
+- `song.html` renders third-party data: DOM via `createElement`/`textContent` only, links/images only if `http(s)` (also enforced server-side by `safe_url`). Discogs requires the visible "Data provided by Discogs" credit; Wikipedia text is CC BY-SA — both in the page footer/source lines.
 
 ### Embedding on leibniz.fm
 

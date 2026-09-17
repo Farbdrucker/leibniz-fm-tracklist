@@ -1,11 +1,11 @@
 """Tracker's internal read API - deliberately minimal: a health check, a bulk
-track dump, and two small embed payloads.
+track dump, two small embed payloads, and a per-song lookup.
 
 `/tracks` stays an unfiltered dump: filtering/search/calendar aggregation live
 client-side in the web UI, so that proven logic isn't reimplemented in both
 Python and JS.
 
-`/now` is the one carve-out, for the widgets embedded on third-party pages
+`/now` is the first carve-out, for the widgets embedded on third-party pages
 (leibniz.fm). It reimplements none of that client-side logic - no search, no
 station detection, no aggregation - it only answers "the newest few rows" and
 "one indexed day", which the bulk dump cannot do cheaply: a foreign page must
@@ -19,21 +19,30 @@ only when a title *changes*, so the newest row looks identical whether the song
 is playing right now or the stream went down an hour ago. That state exists only
 in the running Poller's memory - which makes this the one endpoint that reads
 from something other than SQLite.
+
+`/songs/{artist}/{song}` feeds the song pages. Like `/now` it answers an
+identity lookup, not a filter: "every play of this one song" by its indexed
+slug, so a shared song link doesn't download the entire archive to count five
+plays. Search, station detection and aggregation stay client-side.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from . import db
+from .metadata.enricher import as_payload, needs_fetch
+from .textmatch import song_slug
 
 router = APIRouter()
 
 # Rows returned newest-first in /now. Enough that the client can skip past a run
 # of jingles/station IDs to find the last real track, small enough to stay cheap.
 RECENT_LIMIT = 10
+# Play timestamps listed on a song page; `count` is always the full total.
+SONG_PLAYS_LIMIT = 50
 
 
 def _item(row) -> dict:
@@ -118,4 +127,45 @@ def live(request: Request) -> dict:
         "listeners": listeners,
         "since": since.isoformat(timespec="seconds") if since else None,
         "last": _item(rows[0]) if rows else None,
+    }
+
+
+@router.get("/songs/{artist}/{song}")
+def song(artist: str, song: str, request: Request, fetch: int = 1) -> dict:
+    """One song page: its plays on the station plus cover/album/artist info.
+
+    `fetch=1` (default) fetches missing or stale info before answering, which
+    can take several seconds - MusicBrainz allows one request per second.
+    `fetch=0` answers from the database immediately, with
+    `metadata.needs_fetch` telling the page whether a second call is worth it.
+    """
+    slug = f"{artist}/{song}"
+    with db.connect() as conn:
+        db.assign_slugs(conn, song_slug)
+        plays = db.plays_for_slug(conn, slug)
+        cached = db.get_song_metadata(conn, slug)
+    if not plays:
+        raise HTTPException(status_code=404, detail="unknown song")
+
+    enricher = getattr(request.app.state, "enricher", None)
+    newest = plays[0]
+    if enricher is None:
+        metadata = {"status": "disabled", "fetched_at": None, "needs_fetch": False, "data": {}}
+    elif fetch and needs_fetch(cached):
+        metadata = enricher.ensure(slug, newest["artist"], newest["song"])
+    else:
+        metadata = as_payload(cached)
+
+    return {
+        "slug": slug,
+        "artist": newest["artist"],
+        "song": newest["song"],
+        "server_time": datetime.now().isoformat(timespec="seconds"),
+        "plays": {
+            "count": len(plays),
+            "first": plays[-1]["ts"],
+            "last": newest["ts"],
+            "recent": [p["ts"] for p in plays[:SONG_PLAYS_LIMIT]],
+        },
+        "metadata": metadata,
     }

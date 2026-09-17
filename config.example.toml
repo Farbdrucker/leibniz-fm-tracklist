@@ -10,6 +10,13 @@ db_path = "/data/tracklist.db"
 host = "0.0.0.0"
 port = 8000
 
+[metadata]
+# Cover art, album and artist info for the song pages (/<artist>/<song>), from
+# MusicBrainz, the Cover Art Archive and Wikidata/Wikipedia - no account needed.
+# Discogs is added when DISCOGS_CONSUMER_KEY/_SECRET are set in .env.
+enabled = true
+# contact = "https://github.com/Farbdrucker/leibniz-fm-tracklist"  # sent in the User-Agent
+
 [[providers]]
 type = "spotify"
 enabled = false   # set true once SPOTIFY_CLIENT_ID/SECRET/REFRESH_TOKEN are set in .env

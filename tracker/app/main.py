@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from . import config, db
 from .api import router
 from .ingest import Poller
+from .metadata import Enricher, MetadataWorker
 from .providers import load_providers
 from .sync_engine import SyncEngine
 
@@ -26,6 +27,7 @@ logger = logging.getLogger("tracker.main")
 _stop_sync = threading.Event()
 _sync_threads: list[threading.Thread] = []
 _poller: Poller | None = None
+_metadata: MetadataWorker | None = None
 
 
 def _sync_loop(engine: SyncEngine, interval: float, name: str) -> None:
@@ -41,7 +43,7 @@ def _sync_loop(engine: SyncEngine, interval: float, name: str) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _poller
+    global _poller, _metadata
     settings = config.load(config.config_path())
     db.configure(settings.tracker.db_path)
     db.init_schema()
@@ -52,6 +54,19 @@ async def lifespan(app: FastAPI):
     app.state.poller = _poller
     logger.info("poller started: %s every %.0fs",
                 settings.tracker.stream_status_url, settings.tracker.poll_interval)
+
+    # Same rule as providers: song info is a nice-to-have, so a broken setup is
+    # logged and the song pages simply go without it.
+    enricher = None
+    if settings.metadata.enabled:
+        try:
+            enricher = Enricher(settings.metadata)
+            logger.info("song metadata enabled (discogs: %s)", "on" if enricher.discogs else "off")
+        except Exception:
+            logger.exception("failed to initialize song metadata, continuing without")
+    app.state.enricher = enricher
+    _metadata = MetadataWorker(enricher)
+    _metadata.start()
 
     for runtime in load_providers(settings):
         engine = SyncEngine(runtime.provider, runtime.settings.playlist_name_template,
@@ -68,6 +83,7 @@ async def lifespan(app: FastAPI):
     yield
 
     _poller.stop()
+    _metadata.stop()
     _stop_sync.set()
     for thread in _sync_threads:
         thread.join(timeout=5)
