@@ -51,3 +51,10 @@ als iframe-Fallback und als Bild (`/embed.svg`) für GitHub-READMEs:
 </picture>
 
 Anleitung, Attribute und Einschränkungen: [docs/embedding.md](docs/embedding.md).
+
+## Daten selbst nutzen
+
+Die Titel lassen sich auch ohne die Website weiterverarbeiten — über die öffentliche API
+dieser Instanz (`/api/tracks`, `/api/now`, `/api/live`) oder ganz ohne Umweg über mich,
+direkt aus Icecasts `status-json.xsl`. Endpunkte, Datenmodell, Fallstricke und ein
+30-Zeilen-Mitschnitt zum Selberbauen: [docs/data.md](docs/data.md).
